@@ -131,6 +131,8 @@ class ChannelSend : public ChannelSendInterface,
   std::vector<ReportBlock> GetRemoteRTCPReportBlocks() const override;
   CallSendStatistics GetRTCPStatistics() const override;
 
+  void SetSink(AudioSinkInterface* sink) override;
+                        
   // ProcessAndEncodeAudio() posts a task on the shared encoder task queue,
   // which in turn calls (on the queue) ProcessAndEncodeAudioOnTaskQueue() where
   // the actual processing of the audio takes place. The processing mainly
@@ -191,6 +193,7 @@ class ChannelSend : public ChannelSendInterface,
   std::unique_ptr<RTPSenderAudio> rtp_sender_audio_;
 
   std::unique_ptr<AudioCodingModule> audio_coding_;
+  AudioSinkInterface* audio_sink_ = nullptr;
   uint32_t _timeStamp RTC_GUARDED_BY(encoder_queue_);
 
   // uses
@@ -530,6 +533,11 @@ ChannelSend::~ChannelSend() {
 
   if (_moduleProcessThreadPtr)
     _moduleProcessThreadPtr->DeRegisterModule(_rtpRtcpModule.get());
+}
+
+void ChannelSend::SetSink(AudioSinkInterface* sink) {
+  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  audio_sink_ = sink;
 }
 
 void ChannelSend::StartSend() {
@@ -881,6 +889,14 @@ void ChannelSend::ProcessAndEncodeAudio(
           return;
         }
 
+          if (audio_sink_) {
+              AudioSinkInterface::Data data(
+                audio_frame->data(), audio_frame->samples_per_channel_,
+                audio_frame->sample_rate_hz_, audio_frame->num_channels_,
+                audio_frame->timestamp_);
+              audio_sink_->OnData(data);
+          }
+      
         _timeStamp += static_cast<uint32_t>(audio_frame->samples_per_channel_);
       });
 }

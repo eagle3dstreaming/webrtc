@@ -19,6 +19,7 @@
 #include "media/base/media_engine.h"
 #include "pc/peer_connection.h"
 #include "pc/stats_collector.h"
+#include "pc/local_audio_source.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/helpers.h"
 #include "rtc_base/location.h"
@@ -509,6 +510,9 @@ void AudioRtpSender::SetSend() {
     options = audio_track()->GetSource()->options();
   }
 #endif
+    
+  static_cast<LocalAudioSource*>(audio_track()->GetSource())
+      ->Start(voice_media_channel(), ssrc_);
 
   // |track_->enabled()| hops to the signaling thread, so call it before we hop
   // to the worker thread or else it will deadlock.
@@ -529,6 +533,10 @@ void AudioRtpSender::ClearSend() {
     RTC_LOG(LS_WARNING) << "ClearAudioSend: No audio channel exists.";
     return;
   }
+    
+  static_cast<LocalAudioSource*>(audio_track()->GetSource())
+      ->Stop(voice_media_channel(), ssrc_);
+    
   cricket::AudioOptions options;
   bool success = worker_thread_->Invoke<bool>(RTC_FROM_HERE, [&] {
     return voice_media_channel()->SetAudioSend(ssrc_, false, &options, nullptr);

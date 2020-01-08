@@ -17,6 +17,7 @@
 
 #include "api/audio/audio_frame.h"
 #include "api/audio_codecs/audio_encoder.h"
+#include "api/call/audio_sink.h"
 #include "api/crypto/crypto_options.h"
 #include "api/function_view.h"
 #include "api/task_queue/task_queue_factory.h"
@@ -69,6 +70,8 @@ class ChannelSendInterface {
   virtual void ReceivedRTCPPacket(const uint8_t* packet, size_t length) = 0;
 
   virtual CallSendStatistics GetRTCPStatistics() const = 0;
+    
+  virtual void SetSink(AudioSinkInterface* sink) = 0;
 
   virtual void SetEncoder(int payload_type,
                           std::unique_ptr<AudioEncoder> encoder) = 0;

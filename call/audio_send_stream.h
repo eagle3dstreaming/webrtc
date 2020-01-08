@@ -31,6 +31,7 @@
 
 namespace webrtc {
 
+class AudioSinkInterface;
 class AudioFrame;
 
 class AudioSendStream {
@@ -166,6 +167,11 @@ class AudioSendStream {
 
   // Reconfigure the stream according to the Configuration.
   virtual void Reconfigure(const Config& config) = 0;
+    
+  // Sets an audio s ink that receives audio from the sender stream.
+  // Ownership of the sink is managed by the caller.
+  // Only one sink can be set and passing a null sink clears an existing one.
+  virtual void SetSink(AudioSinkInterface* sink) = 0;
 
   // Starts stream activity.
   // When a stream is active, it can receive, process and deliver packets.

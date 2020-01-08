@@ -13,6 +13,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@protocol RTCAudioSink;
 @class RTCAudioSource;
 
 RTC_OBJC_EXPORT
@@ -22,6 +23,12 @@ RTC_OBJC_EXPORT
 
 /** The audio source for this audio track. */
 @property(nonatomic, readonly) RTCAudioSource *source;
+
+/** Register a listneer that will render all frames received on this track. */
+- (void)addSink:(id<RTCAudioSink>)sink;
+
+/** Deregister a renderer. */
+- (void)removeSink:(id<RTCAudioSink>)sink;
 
 @end
 

@@ -81,6 +81,7 @@ class AudioSendStream final : public webrtc::AudioSendStream,
   // webrtc::AudioSendStream implementation.
   const webrtc::AudioSendStream::Config& GetConfig() const override;
   void Reconfigure(const webrtc::AudioSendStream::Config& config) override;
+  void SetSink(AudioSinkInterface* sink) override;
   void Start() override;
   void Stop() override;
   void SendAudioData(std::unique_ptr<AudioFrame> audio_frame) override;

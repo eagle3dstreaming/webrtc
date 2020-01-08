@@ -196,6 +196,11 @@ void AudioSendStream::Reconfigure(
   ConfigureStream(new_config, false);
 }
 
+void AudioSendStream::SetSink(AudioSinkInterface* sink) {
+  RTC_DCHECK(worker_thread_checker_.IsCurrent());
+  channel_send_->SetSink(sink);
+}
+
 AudioSendStream::ExtensionIds AudioSendStream::FindExtensionIds(
     const std::vector<RtpExtension>& extensions) {
   ExtensionIds ids;

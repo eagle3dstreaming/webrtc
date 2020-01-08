@@ -212,7 +212,7 @@ rtc::scoped_refptr<AudioSourceInterface>
 PeerConnectionFactory::CreateAudioSource(const cricket::AudioOptions& options) {
   RTC_DCHECK(signaling_thread_->IsCurrent());
   rtc::scoped_refptr<LocalAudioSource> source(
-      LocalAudioSource::Create(&options));
+      LocalAudioSource::Create(worker_thread_, &options));
   return source;
 }
 
