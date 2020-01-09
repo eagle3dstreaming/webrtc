@@ -25,6 +25,7 @@ class MockAudioSendStream : public AudioSendStream {
   MOCK_METHOD1(Reconfigure, void(const Config& config));
   MOCK_METHOD0(Start, void());
   MOCK_METHOD0(Stop, void());
+  MOCK_METHOD1(SetSink, void(AudioSinkInterface* sink));
   // GMock doesn't like move-only types, such as std::unique_ptr.
   virtual void SendAudioData(std::unique_ptr<webrtc::AudioFrame> audio_frame) {
     SendAudioDataForMock(audio_frame.get());
