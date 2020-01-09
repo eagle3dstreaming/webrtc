@@ -122,6 +122,7 @@ class MockChannelSend : public voe::ChannelSendInterface {
   MOCK_CONST_METHOD0(GetRTT, int64_t());
   MOCK_METHOD0(StartSend, void());
   MOCK_METHOD0(StopSend, void());
+  MOCK_METHOD1(SetSink, void(AudioSinkInterface* sink));
   MOCK_METHOD1(
       SetFrameEncryptor,
       void(rtc::scoped_refptr<FrameEncryptorInterface> frame_encryptor));
