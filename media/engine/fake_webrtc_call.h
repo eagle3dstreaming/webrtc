@@ -60,6 +60,7 @@ class FakeAudioSendStream final : public webrtc::AudioSendStream {
   void Reconfigure(const webrtc::AudioSendStream::Config& config) override;
   void Start() override { sending_ = true; }
   void Stop() override { sending_ = false; }
+  void SetSink(webrtc::AudioSinkInterface* sink) override;
   void SendAudioData(std::unique_ptr<webrtc::AudioFrame> audio_frame) override {
   }
   bool SendTelephoneEvent(int payload_type,
@@ -75,6 +76,7 @@ class FakeAudioSendStream final : public webrtc::AudioSendStream {
   TelephoneEvent latest_telephone_event_;
   webrtc::AudioSendStream::Config config_;
   webrtc::AudioSendStream::Stats stats_;
+  webrtc::AudioSinkInterface* sink_ = nullptr;
   bool sending_ = false;
   bool muted_ = false;
 };

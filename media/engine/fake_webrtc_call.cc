@@ -43,6 +43,10 @@ FakeAudioSendStream::GetLatestTelephoneEvent() const {
   return latest_telephone_event_;
 }
 
+void FakeAudioSendStream::SetSink(webrtc::AudioSinkInterface* sink) {
+  sink_ = sink;
+}
+
 bool FakeAudioSendStream::SendTelephoneEvent(int payload_type,
                                              int payload_frequency,
                                              int event,
