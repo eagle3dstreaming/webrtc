@@ -267,6 +267,7 @@ if (is_android) {
     visibility = [ "*" ]
     sources = [
       "api/org/webrtc/AudioProcessingFactory.java",
+      "api/org/webrtc/AudioSink.java",
       "api/org/webrtc/AudioSource.java",
       "api/org/webrtc/AudioTrack.java",
       "api/org/webrtc/CallSessionFileRotatingLogSink.java",
@@ -646,6 +647,8 @@ if (current_os == "linux" || is_android) {
     sources = [
       "src/jni/android_video_track_source.cc",
       "src/jni/android_video_track_source.h",
+      "src/jni/audio_sink.cc",
+      "src/jni/audio_sink.h",
       "src/jni/encoded_image.cc",
       "src/jni/encoded_image.h",
       "src/jni/h264_utils.cc",
@@ -1222,6 +1225,7 @@ if (current_os == "linux" || is_android) {
 
   generate_jni("generated_video_jni") {
     sources = [
+      "api/org/webrtc/AudioSink.java",
       "api/org/webrtc/EncodedImage.java",
       "api/org/webrtc/JavaI420Buffer.java",
       "api/org/webrtc/MediaCodecVideoDecoder.java",
@@ -1274,6 +1278,7 @@ if (current_os == "linux" || is_android) {
 
   generate_jni("generated_peerconnection_jni") {
     sources = [
+      "api/org/webrtc/AudioSink.java",
       "api/org/webrtc/AudioTrack.java",
       "api/org/webrtc/CallSessionFileRotatingLogSink.java",
       "api/org/webrtc/CandidatePairChangeEvent.java",

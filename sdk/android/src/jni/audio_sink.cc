@@ -8,7 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "sdk/android/src/jni/audiosink.h"
+#include "sdk/android/src/jni/audio_sink.h"
 #include "sdk/android/generated_video_jni/jni/AudioSink_jni.h"
 
 namespace webrtc {

@@ -13,7 +13,7 @@
 
 #include <jni.h>
 
-#include "api/mediastreaminterface.h"
+#include "api/media_stream_interface.h"
 #include "sdk/android/src/jni/jni_helpers.h"
 
 namespace webrtc {
