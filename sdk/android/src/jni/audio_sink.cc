@@ -9,7 +9,7 @@
  */
 
 #include "sdk/android/src/jni/audio_sink.h"
-#include "sdk/android/generated_video_jni/jni/AudioSink_jni.h"
+#include "sdk/android/generated_video_jni/AudioSink_jni.h"
 
 namespace webrtc {
 namespace jni {
