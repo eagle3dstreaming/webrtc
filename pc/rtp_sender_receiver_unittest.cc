@@ -557,7 +557,7 @@ TEST_F(RtpSenderReceiverTest, AddAndDestroyVideoRtpReceiverWithStreams) {
 TEST_F(RtpSenderReceiverTest, LocalAudioSourceOptionsApplied) {
   cricket::AudioOptions options;
   options.echo_cancellation = true;
-  auto source = LocalAudioSource::Create(&options);
+  auto source = LocalAudioSource::Create(rtc::Thread::Current(), &options);
   CreateAudioRtpSender(source.get());
 
   EXPECT_EQ(true, voice_media_channel_->options().echo_cancellation);

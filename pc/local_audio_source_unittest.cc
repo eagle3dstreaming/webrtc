@@ -9,6 +9,7 @@
  */
 
 #include "pc/local_audio_source.h"
+#include "rtc_base/thread.h"
 
 #include "absl/types/optional.h"
 #include "test/gtest.h"
@@ -19,12 +20,12 @@ TEST(LocalAudioSourceTest, InitWithAudioOptions) {
   cricket::AudioOptions audio_options;
   audio_options.highpass_filter = true;
   rtc::scoped_refptr<LocalAudioSource> source =
-      LocalAudioSource::Create(&audio_options);
+      LocalAudioSource::Create(rtc::Thread::Current(), &audio_options);
   EXPECT_EQ(true, source->options().highpass_filter);
 }
 
 TEST(LocalAudioSourceTest, InitWithNoOptions) {
   rtc::scoped_refptr<LocalAudioSource> source =
-      LocalAudioSource::Create(nullptr);
+      LocalAudioSource::Create(rtc::Thread::Current(), nullptr);
   EXPECT_EQ(absl::nullopt, source->options().highpass_filter);
 }
