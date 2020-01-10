@@ -33,8 +33,8 @@ void AudioSinkWrapper::OnData(const void* audio_data,
                         jaudio_data,
                         bits_per_sample,
                         sample_rate,
-                        number_of_channels,
-                        number_of_frames);
+                        (int)number_of_channels,
+                        (int)number_of_frames);
 }
 
 }  // namespace jni
