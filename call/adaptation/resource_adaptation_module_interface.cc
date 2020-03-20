@@ -12,6 +12,8 @@
 
 namespace webrtc {
 
+ResourceAdaptationModuleListener::~ResourceAdaptationModuleListener() {}
+
 ResourceAdaptationModuleInterface::~ResourceAdaptationModuleInterface() {}
 
 }  // namespace webrtc

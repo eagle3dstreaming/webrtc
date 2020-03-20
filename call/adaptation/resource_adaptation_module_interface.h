@@ -11,7 +11,21 @@
 #ifndef CALL_ADAPTATION_RESOURCE_ADAPTATION_MODULE_INTERFACE_H_
 #define CALL_ADAPTATION_RESOURCE_ADAPTATION_MODULE_INTERFACE_H_
 
+#include "call/adaptation/video_source_restrictions.h"
+
 namespace webrtc {
+
+// The listener is responsible for carrying out the reconfiguration of the video
+// source such that the VideoSourceRestrictions are fulfilled.
+class ResourceAdaptationModuleListener {
+ public:
+  virtual ~ResourceAdaptationModuleListener();
+
+  // TODO(hbos): When we support the muli-stream use case, the arguments need to
+  // specify which video stream's source needs to be reconfigured.
+  virtual void OnVideoSourceRestrictionsUpdated(
+      VideoSourceRestrictions restrictions) = 0;
+};
 
 // Responsible for reconfiguring encoded streams based on resource consumption,
 // such as scaling down resolution or frame rate when CPU is overused. This
@@ -35,7 +49,8 @@ class ResourceAdaptationModuleInterface {
   // in a VideoStreamEncoder here directly then have a dependency on a different
   // build target). For the multi-stream use case we may consider making
   // ResourceAdaptationModuleInterface reference counted.
-  virtual void StartCheckForOveruse() = 0;
+  virtual void StartCheckForOveruse(
+      ResourceAdaptationModuleListener* adaptation_listener) = 0;
   virtual void StopCheckForOveruse() = 0;
 };
 

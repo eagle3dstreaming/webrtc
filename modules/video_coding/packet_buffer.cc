@@ -24,10 +24,10 @@
 #include "api/video/encoded_frame.h"
 #include "api/video/video_frame_type.h"
 #include "common_video/h264/h264_common.h"
-#include "modules/rtp_rtcp/source/rtp_depacketizer_av1.h"
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "modules/rtp_rtcp/source/rtp_video_header.h"
+#include "modules/rtp_rtcp/source/video_rtp_depacketizer_av1.h"
 #include "modules/video_coding/codecs/h264/include/h264_globals.h"
 #include "modules/video_coding/frame_object.h"
 #include "rtc_base/checks.h"
@@ -357,8 +357,8 @@ std::vector<std::unique_ptr<RtpFrameObject>> PacketBuffer::FindFrames(
         if (has_h264_idr && (!has_h264_sps || !has_h264_pps)) {
           RTC_LOG(LS_WARNING)
               << "Received H.264-IDR frame "
-              << "(SPS: " << has_h264_sps << ", PPS: " << has_h264_pps
-              << "). Treating as "
+                 "(SPS: "
+              << has_h264_sps << ", PPS: " << has_h264_pps << "). Treating as "
               << (sps_pps_idr_is_h264_keyframe_ ? "delta" : "key")
               << " frame since WebRTC-SpsPpsIdrIsH264Keyframe is "
               << (sps_pps_idr_is_h264_keyframe_ ? "enabled." : "disabled");
@@ -441,7 +441,7 @@ std::unique_ptr<RtpFrameObject> PacketBuffer::AssembleFrame(
   rtc::scoped_refptr<EncodedImageBuffer> bitstream;
   // TODO(danilchap): Hide codec-specific code paths behind an interface.
   if (first_packet.codec() == VideoCodecType::kVideoCodecAV1) {
-    bitstream = RtpDepacketizerAv1::AssembleFrame(payloads);
+    bitstream = VideoRtpDepacketizerAv1::AssembleFrame(payloads);
     if (!bitstream) {
       // Failed to assemble a frame. Discard and continue.
       return nullptr;

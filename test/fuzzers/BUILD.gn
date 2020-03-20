@@ -63,21 +63,14 @@ webrtc_fuzzer_test("h264_depacketizer_fuzzer") {
   ]
 }
 
-webrtc_fuzzer_test("generic_depacketizer_fuzzer") {
-  sources = [
-    "generic_depacketizer_fuzzer.cc",
-  ]
-  deps = [
-    "../../modules/rtp_rtcp",
-  ]
-}
-
 webrtc_fuzzer_test("vp8_depacketizer_fuzzer") {
   sources = [
     "vp8_depacketizer_fuzzer.cc",
   ]
   deps = [
+    "../../api:array_view",
     "../../modules/rtp_rtcp",
+    "../../modules/rtp_rtcp:rtp_video_header",
   ]
 }
 
@@ -86,7 +79,9 @@ webrtc_fuzzer_test("vp9_depacketizer_fuzzer") {
     "vp9_depacketizer_fuzzer.cc",
   ]
   deps = [
+    "../../api:array_view",
     "../../modules/rtp_rtcp",
+    "../../modules/rtp_rtcp:rtp_video_header",
   ]
 }
 
@@ -564,15 +559,6 @@ webrtc_fuzzer_test("comfort_noise_decoder_fuzzer") {
     "../../api:array_view",
     "../../modules/audio_coding:webrtc_cng",
     "../../rtc_base:rtc_base_approved",
-  ]
-}
-
-webrtc_fuzzer_test("rtp_depacketizer_av1_parse_fuzzer") {
-  sources = [
-    "rtp_depacketizer_av1_parse_fuzzer.cc",
-  ]
-  deps = [
-    "../../modules/rtp_rtcp",
   ]
 }
 

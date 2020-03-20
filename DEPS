@@ -5,7 +5,7 @@ vars = {
   # chromium waterfalls. More info at: crbug.com/570091.
   'checkout_configuration': 'default',
   'checkout_instrumented_libraries': 'checkout_linux and checkout_configuration == "default"',
-  'chromium_revision': '170b5c3c752a9b5c0c5ebc379a1d79556562e242',
+  'chromium_revision': '2638d7649b8cd2f4c4a19ddabf28de040ad103a7',
 }
 
 deps = {
@@ -35,7 +35,7 @@ deps = {
     'packages': [
       {
         'package': 'gn/gn/linux-amd64',
-        'version': 'git_revision:a5bcbd726ac7bd342ca6ee3e3a006478fd1f00b5',
+        'version': 'git_revision:0c5557d173ce217cea095086a9c9610068123503',
       }
     ],
     'dep_type': 'cipd',
@@ -45,7 +45,7 @@ deps = {
     'packages': [
       {
         'package': 'gn/gn/mac-amd64',
-        'version': 'git_revision:a5bcbd726ac7bd342ca6ee3e3a006478fd1f00b5',
+        'version': 'git_revision:0c5557d173ce217cea095086a9c9610068123503',
       }
     ],
     'dep_type': 'cipd',
@@ -55,7 +55,7 @@ deps = {
     'packages': [
       {
         'package': 'gn/gn/windows-amd64',
-        'version': 'git_revision:a5bcbd726ac7bd342ca6ee3e3a006478fd1f00b5',
+        'version': 'git_revision:0c5557d173ce217cea095086a9c9610068123503',
       }
     ],
     'dep_type': 'cipd',
@@ -86,7 +86,7 @@ deps = {
       'packages': [
           {
               'package': 'chromium/third_party/android_build_tools/aapt2',
-              'version': 'by7YdhjwRQYtrv0Q_q_fPsqptrm5ib-SXmiNfgJYp50C',
+              'version': 'TM6ESkOFwhdEwjsIxbY3m6j7BIhg8mpY_X9Pg0nwb1AC',
           },
       ],
       'condition': 'checkout_android',
@@ -107,7 +107,7 @@ deps = {
   'src/third_party/boringssl/src':
     'https://boringssl.googlesource.com/boringssl.git@cb3f04f584a53844546aaa32e949534c453185aa',
   'src/third_party/catapult':
-    'https://chromium.googlesource.com/catapult.git@a209c4d9908c4c3715ea16378bd8423e1a4527ba',
+    'https://chromium.googlesource.com/catapult.git@b9bb682ff61f0cc07227809b0f1c4ee8b6b5d56d',
   'src/third_party/ced/src': {
     'url': 'https://chromium.googlesource.com/external/github.com/google/compact_enc_det.git@ba412eaaacd3186085babcd901679a48863c7dd5',
     'condition': 'checkout_android',
@@ -115,9 +115,9 @@ deps = {
   'src/third_party/colorama/src':
     'https://chromium.googlesource.com/external/colorama.git@799604a1041e9b3bc5d2789ecbd7e8db2e18e6b8',
   'src/third_party/depot_tools':
-    'https://chromium.googlesource.com/chromium/tools/depot_tools.git@1961043388e63c48946322de077bebbb333fde6a',
+    'https://chromium.googlesource.com/chromium/tools/depot_tools.git@2a04803267c61a53e9769bb2963b45e06a981804',
   'src/third_party/ffmpeg':
-    'https://chromium.googlesource.com/chromium/third_party/ffmpeg.git@252792a1ff65deadc4e627e59ce80b8811c5a5de',
+    'https://chromium.googlesource.com/chromium/third_party/ffmpeg.git@bcc5d9fec0a32ec5a90b831e5d0414639af34e1f',
   'src/third_party/findbugs': {
     'url': 'https://chromium.googlesource.com/chromium/deps/findbugs.git@4275d9ac8610db6b1bc9a5e887f97e41b33fac67',
     'condition': 'checkout_android',
@@ -125,7 +125,7 @@ deps = {
   'src/third_party/freetype/src':
     'https://chromium.googlesource.com/chromium/src/third_party/freetype2.git@50b013871c53f7624b5351dd4820a137303fe14b',
   'src/third_party/harfbuzz-ng/src':
-    'https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@64a45be5198f6e22c91454bda7bd9a9294552dff',
+    'https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@82545c5e2ba2067f2eb117c7358ed6d5b50ca942',
   # WebRTC-only dependency (not present in Chromium).
   'src/third_party/gtest-parallel':
     'https://chromium.googlesource.com/external/github.com/google/gtest-parallel@df0b4e476f98516cea7d593e5dbb0fca44f6ee7f',
@@ -484,7 +484,7 @@ deps = {
       'packages': [
           {
               'package': 'chromium/third_party/sqlite4java',
-              'version': '889660698187baa7c8b0d79f7bf58563125fbd66',
+              'version': 'LofjKH9dgXIAJhRYCPQlMFywSwxYimrfDeBmaHc-Z5EC',
           },
       ],
       'condition': 'checkout_android',

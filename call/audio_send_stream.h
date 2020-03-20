@@ -25,6 +25,7 @@
 #include "api/crypto/frame_encryptor_interface.h"
 #include "api/rtp_parameters.h"
 #include "api/scoped_refptr.h"
+#include "call/audio_sender.h"
 #include "call/rtp_config.h"
 #include "modules/audio_processing/include/audio_processing_statistics.h"
 #include "modules/rtp_rtcp/include/report_block_data.h"
@@ -34,7 +35,7 @@ namespace webrtc {
 class AudioSinkInterface;
 class AudioFrame;
 
-class AudioSendStream {
+class AudioSendStream : public AudioSender {
  public:
   struct Stats {
     Stats();
@@ -180,10 +181,6 @@ class AudioSendStream {
   // When a stream is stopped, it can't receive, process or deliver packets.
   virtual void Stop() = 0;
 
-  // Encode and send audio.
-  virtual void SendAudioData(
-      std::unique_ptr<webrtc::AudioFrame> audio_frame) = 0;
-
   // TODO(solenberg): Make payload_type a config property instead.
   virtual bool SendTelephoneEvent(int payload_type,
                                   int payload_frequency,
@@ -195,6 +192,7 @@ class AudioSendStream {
   virtual Stats GetStats() const = 0;
   virtual Stats GetStats(bool has_remote_tracks) const = 0;
 };
+
 }  // namespace webrtc
 
 #endif  // CALL_AUDIO_SEND_STREAM_H_

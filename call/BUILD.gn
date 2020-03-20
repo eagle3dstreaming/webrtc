@@ -28,6 +28,7 @@ rtc_library("call_interfaces") {
     sources += [ "audio_send_stream.cc" ]
   }
   deps = [
+    ":audio_sender_interface",
     ":rtp_interfaces",
     ":video_stream_api",
     "../api:fec_controller_api",
@@ -60,6 +61,16 @@ rtc_library("call_interfaces") {
     "../rtc_base:rtc_base_approved",
     "../rtc_base/network:sent_packet",
     "//third_party/abseil-cpp/absl/types:optional",
+  ]
+}
+
+rtc_source_set("audio_sender_interface") {
+  visibility = [ "*" ]
+  sources = [
+    "audio_sender.h",
+  ]
+  deps = [
+    "../api/audio:audio_frame_api",
   ]
 }
 
@@ -422,6 +433,7 @@ if (rtc_include_tests) {
       "../test:video_test_common",
       "../test/time_controller:time_controller",
       "../video",
+      "//test/scenario:scenario",
       "//testing/gmock",
       "//testing/gtest",
       "//third_party/abseil-cpp/absl/container:inlined_vector",

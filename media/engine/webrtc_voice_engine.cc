@@ -170,9 +170,10 @@ absl::optional<int> ComputeSendBitrate(int max_send_bitrate_bps,
     // fail. If codec is not multi-rate and |bps| exceeds or equal the fixed
     // bitrate then ignore.
     RTC_LOG(LS_ERROR) << "Failed to set codec " << spec.format.name
-                      << " to bitrate " << bps << " bps"
-                      << ", requires at least " << spec.info.min_bitrate_bps
-                      << " bps.";
+                      << " to bitrate " << bps
+                      << " bps"
+                         ", requires at least "
+                      << spec.info.min_bitrate_bps << " bps.";
     return absl::nullopt;
   }
 
@@ -1190,7 +1191,7 @@ class WebRtcVoiceMediaChannel::WebRtcAudioReceiveStream {
       return true;
     } else {
       RTC_LOG(LS_ERROR) << "Failed to SetBaseMinimumPlayoutDelayMs"
-                        << " on AudioReceiveStream on SSRC="
+                           " on AudioReceiveStream on SSRC="
                         << config_.rtp.remote_ssrc
                         << " with delay_ms=" << delay_ms;
       return false;
@@ -1360,7 +1361,8 @@ webrtc::RtpParameters WebRtcVoiceMediaChannel::GetRtpSendParameters(
   auto it = send_streams_.find(ssrc);
   if (it == send_streams_.end()) {
     RTC_LOG(LS_WARNING) << "Attempting to get RTP send parameters for stream "
-                        << "with ssrc " << ssrc << " which doesn't exist.";
+                           "with ssrc "
+                        << ssrc << " which doesn't exist.";
     return webrtc::RtpParameters();
   }
 
@@ -1380,7 +1382,8 @@ webrtc::RTCError WebRtcVoiceMediaChannel::SetRtpSendParameters(
   auto it = send_streams_.find(ssrc);
   if (it == send_streams_.end()) {
     RTC_LOG(LS_WARNING) << "Attempting to set RTP send parameters for stream "
-                        << "with ssrc " << ssrc << " which doesn't exist.";
+                           "with ssrc "
+                        << ssrc << " which doesn't exist.";
     return webrtc::RTCError(webrtc::RTCErrorType::INTERNAL_ERROR);
   }
 
@@ -1389,7 +1392,7 @@ webrtc::RTCError WebRtcVoiceMediaChannel::SetRtpSendParameters(
   webrtc::RtpParameters current_parameters = GetRtpSendParameters(ssrc);
   if (current_parameters.codecs != parameters.codecs) {
     RTC_DLOG(LS_ERROR) << "Using SetParameters to change the set of codecs "
-                       << "is not currently supported.";
+                          "is not currently supported.";
     return webrtc::RTCError(webrtc::RTCErrorType::UNSUPPORTED_PARAMETER);
   }
 
@@ -1435,7 +1438,8 @@ webrtc::RtpParameters WebRtcVoiceMediaChannel::GetRtpReceiveParameters(
   if (it == recv_streams_.end()) {
     RTC_LOG(LS_WARNING)
         << "Attempting to get RTP receive parameters for stream "
-        << "with ssrc " << ssrc << " which doesn't exist.";
+           "with ssrc "
+        << ssrc << " which doesn't exist.";
     return webrtc::RtpParameters();
   }
   rtp_params = it->second->GetRtpParameters();

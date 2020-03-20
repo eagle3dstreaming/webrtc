@@ -120,9 +120,11 @@ std::string TransformFilePath(std::string path) {
   return path;
 }
 
-VideoSendStream::Config CreateVideoSendStreamConfig(VideoStreamConfig config,
-                                                    std::vector<uint32_t> ssrcs,
-                                                    Transport* send_transport) {
+VideoSendStream::Config CreateVideoSendStreamConfig(
+    VideoStreamConfig config,
+    std::vector<uint32_t> ssrcs,
+    std::vector<uint32_t> rtx_ssrcs,
+    Transport* send_transport) {
   VideoSendStream::Config send_config(send_transport);
   send_config.rtp.payload_name = CodecTypeToPayloadString(config.encoder.codec);
   send_config.rtp.payload_type = CodecTypeToPayloadType(config.encoder.codec);
@@ -132,6 +134,10 @@ VideoSendStream::Config CreateVideoSendStreamConfig(VideoStreamConfig config,
   send_config.rtp.ssrcs = ssrcs;
   send_config.rtp.extensions = GetVideoRtpExtensions(config);
 
+  if (config.stream.use_rtx) {
+    send_config.rtp.rtx.payload_type = CallTest::kSendRtxPayloadType;
+    send_config.rtp.rtx.ssrcs = rtx_ssrcs;
+  }
   if (config.stream.use_flexfec) {
     send_config.rtp.flexfec.payload_type = CallTest::kFlexfecPayloadType;
     send_config.rtp.flexfec.ssrc = CallTest::kFlexfecSendSsrc;
@@ -398,7 +404,7 @@ SendVideoStream::SendVideoStream(CallClient* sender,
     rtx_ssrcs_.push_back(sender->GetNextRtxSsrc());
   }
   VideoSendStream::Config send_config =
-      CreateVideoSendStreamConfig(config, ssrcs_, send_transport);
+      CreateVideoSendStreamConfig(config, ssrcs_, rtx_ssrcs_, send_transport);
   send_config.encoder_settings.encoder_factory = encoder_factory_.get();
   send_config.encoder_settings.bitrate_allocator_factory =
       bitrate_allocator_factory_.get();
@@ -480,6 +486,22 @@ void SendVideoStream::UpdateActiveLayers(std::vector<bool> active_layers) {
   });
 }
 
+bool SendVideoStream::UsingSsrc(uint32_t ssrc) const {
+  for (uint32_t owned : ssrcs_) {
+    if (owned == ssrc)
+      return true;
+  }
+  return false;
+}
+
+bool SendVideoStream::UsingRtxSsrc(uint32_t ssrc) const {
+  for (uint32_t owned : rtx_ssrcs_) {
+    if (owned == ssrc)
+      return true;
+  }
+  return false;
+}
+
 void SendVideoStream::SetCaptureFramerate(int framerate) {
   sender_->SendTask([&] { video_capturer_->ChangeFramerate(framerate); });
 }
@@ -514,7 +536,8 @@ ReceiveVideoStream::ReceiveVideoStream(CallClient* receiver,
                                        VideoFrameMatcher* matcher)
     : receiver_(receiver), config_(config) {
   if (config.encoder.codec ==
-      VideoStreamConfig::Encoder::Codec::kVideoCodecGeneric) {
+          VideoStreamConfig::Encoder::Codec::kVideoCodecGeneric ||
+      config.encoder.implementation == VideoStreamConfig::Encoder::kFake) {
     decoder_factory_ = std::make_unique<FunctionVideoDecoderFactory>(
         []() { return std::make_unique<FakeDecoder>(); });
   } else {
