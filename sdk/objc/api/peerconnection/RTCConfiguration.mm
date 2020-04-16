@@ -291,10 +291,23 @@
   nativeConfig->max_port = _maxPort;
     
   nativeConfig->proxy_type = [[self class] nativeProxyTypeForProxyType:_proxyType ];
-  nativeConfig->proxy_address = std::string([_proxyAddress cStringUsingEncoding:NSASCIIStringEncoding]);
+
+  if([_proxyAddress length] > 0)
+  {
+    nativeConfig->proxy_address = [_proxyAddress UTF8String];
+  }
+
   nativeConfig->proxy_port = _proxyPort;
-  nativeConfig->proxy_user = std::string([_proxyUsername cStringUsingEncoding:NSASCIIStringEncoding]);
-  nativeConfig->proxy_password = std::string([_proxyPassword cStringUsingEncoding:NSASCIIStringEncoding]);
+
+  if([_proxyUsername length] > 0)
+  {
+    nativeConfig->proxy_user = [_proxyUsername UTF8String];
+  }
+
+  if([_proxyPassword length] > 0)
+  {
+    nativeConfig->proxy_password = [_proxyPassword UTF8String];
+  }
 
   return nativeConfig.release();
 }
