@@ -195,7 +195,7 @@ ChannelLayout GuessChannelLayout(int channels) {
     case 8:
       return CHANNEL_LAYOUT_7_1;
     default:
-      RTC_DLOG(LS_WARNING) << "Unsupported channel count: " << channels;
+      RTC_DLOG(LS_WARNING) << "Unsupported channel count: ";// << channels;
   }
   return CHANNEL_LAYOUT_UNSUPPORTED;
 }
