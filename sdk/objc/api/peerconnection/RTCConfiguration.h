@@ -68,6 +68,13 @@ typedef NS_ENUM(NSInteger, RTCSdpSemantics) {
   RTCSdpSemanticsUnifiedPlan,
 };
 
+typedef NS_ENUM(NSInteger, RTCProxyType) {
+    RTCProxyTypeNone,
+    RTCProxyTypeHTTPS,
+    RTCProxyTypeSOCKS5,
+    RTCProxyTypeUnknown,
+};
+
 NS_ASSUME_NONNULL_BEGIN
 
 RTC_OBJC_EXPORT
@@ -228,6 +235,15 @@ RTC_OBJC_EXPORT
  * Time interval between video RTCP reports.
  */
 @property(nonatomic, assign) int rtcpVideoReportIntervalMs;
+
+@property(nonatomic, assign) uint16_t  minPort;
+@property(nonatomic, assign) uint16_t  maxPort;
+
+@property(nonatomic, assign) RTCProxyType proxyType;
+@property(nonatomic, copy, nullable) NSString* proxyAddress;
+@property(nonatomic, assign) uint16_t  proxyPort;
+@property(nonatomic, copy, nullable) NSString* proxyUsername;
+@property(nonatomic, copy, nullable) NSString* proxyPassword;
 
 - (instancetype)init;
 

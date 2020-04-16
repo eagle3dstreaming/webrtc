@@ -415,6 +415,14 @@ public class PeerConnection {
     KEEP_FIRST_READY // Keep the first ready port and prune the rest on the same network.
   }
 
+  /** Java version of rtc::ProxyType */
+  public enum ProxyType {
+    NONE,
+    HTTPS,
+    SOCKS5,
+    UNKNOWN
+  }
+
   /** Java version of rtc::IntervalRange */
   public static class IntervalRange {
     private final int min;
@@ -580,6 +588,15 @@ public class PeerConnection {
      */
     @Nullable public String turnLoggingId;
 
+    public int maxPort;
+    public int minPort;
+
+    public ProxyType proxyType;
+    @Nullable public String proxyAddress;
+    public int proxyPort;
+    @Nullable public String proxyUsername;
+    @Nullable public String proxyPassword;
+
     // TODO(deadbeef): Instead of duplicating the defaults here, we should do
     // something to pick up the defaults from C++. The Objective-C equivalent
     // of RTCConfiguration does that.
@@ -626,6 +643,13 @@ public class PeerConnection {
       cryptoOptions = null;
       turnLoggingId = null;
       allowCodecSwitching = null;
+      maxPort = 0;
+      minPort = 0;
+      proxyType = ProxyType.NONE;
+      proxyAddress=null;
+      proxyPort=0;
+      proxyUsername = null;
+      proxyPassword = null;
     }
 
     @CalledByNative("RTCConfiguration")
@@ -861,6 +885,44 @@ public class PeerConnection {
     @CalledByNative("RTCConfiguration")
     String getTurnLoggingId() {
       return turnLoggingId;
+    }
+
+    @CalledByNative("RTCConfiguration")
+    int getMinPort() {
+      return minPort;
+    }
+
+    @CalledByNative("RTCConfiguration")
+    int getMaxPort() {
+      return maxPort;
+    }
+
+    @CalledByNative("RTCConfiguration")
+    ProxyType getProxyType() {
+      return proxyType;
+    }
+
+    @Nullable
+    @CalledByNative("RTCConfiguration")
+    String getProxyAddress() {
+      return proxyAddress;
+    }
+      
+    @CalledByNative("RTCConfiguration")
+    int getProxyPort() {
+      return proxyPort;
+    }
+
+    @Nullable
+    @CalledByNative("RTCConfiguration")
+    String getProxyUsername() {
+      return proxyUsername;
+    }
+
+    @Nullable
+    @CalledByNative("RTCConfiguration")
+    String getProxyPassword() {
+      return proxyPassword;
     }
   };
 

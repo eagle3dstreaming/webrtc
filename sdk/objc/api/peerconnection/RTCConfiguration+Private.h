@@ -64,6 +64,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (NSString *)stringForSdpSemantics:(RTCSdpSemantics)sdpSemantics;
 
++ (rtc::ProxyType)nativeProxyTypeForProxyType:(RTCProxyType)proxyType;
+
 /**
  * RTCConfiguration struct representation of this RTCConfiguration. This is
  * needed to pass to the underlying C++ APIs.

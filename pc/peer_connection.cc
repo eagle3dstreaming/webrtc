@@ -908,6 +908,13 @@ bool PeerConnectionInterface::RTCConfiguration::operator==(
     std::string turn_logging_id;
     bool enable_implicit_rollback;
     absl::optional<bool> allow_codec_switching;
+    uint16_t min_port;
+    uint16_t max_port;
+    rtc::ProxyType proxy_type;
+    std::string proxy_address;
+    uint16_t proxy_port;
+    std::string proxy_user;
+    std::string proxy_password;
   };
   static_assert(sizeof(stuff_being_tested_for_equality) == sizeof(*this),
                 "Did you add something to RTCConfiguration and forget to "
@@ -976,7 +983,14 @@ bool PeerConnectionInterface::RTCConfiguration::operator==(
          offer_extmap_allow_mixed == o.offer_extmap_allow_mixed &&
          turn_logging_id == o.turn_logging_id &&
          enable_implicit_rollback == o.enable_implicit_rollback &&
-         allow_codec_switching == o.allow_codec_switching;
+         allow_codec_switching == o.allow_codec_switching &&
+         min_port == o.min_port &&
+         max_port == o.max_port &&
+         proxy_type == o.proxy_type &&
+         proxy_address == o.proxy_address &&
+         proxy_port == o.proxy_port &&
+         proxy_user == o.proxy_user &&
+         proxy_password == o.proxy_password;
 }
 
 bool PeerConnectionInterface::RTCConfiguration::operator!=(

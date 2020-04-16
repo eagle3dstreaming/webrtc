@@ -59,6 +59,15 @@
 @synthesize rtcpAudioReportIntervalMs = _rtcpAudioReportIntervalMs;
 @synthesize rtcpVideoReportIntervalMs = _rtcpVideoReportIntervalMs;
 
+@synthesize minPort = _minPort;
+@synthesize maxPort = _maxPort;
+
+@synthesize proxyType= _proxyType;
+@synthesize proxyAddress= _proxyAddress;
+@synthesize proxyPort= _proxyPort;
+@synthesize proxyUsername= _proxyUsername;
+@synthesize proxyPassword= _proxyPassword;
+
 - (instancetype)init {
   // Copy defaults.
   webrtc::PeerConnectionInterface::RTCConfiguration config;
@@ -277,6 +286,16 @@
   nativeConfig->set_audio_rtcp_report_interval_ms(_rtcpAudioReportIntervalMs);
   nativeConfig->set_video_rtcp_report_interval_ms(_rtcpVideoReportIntervalMs);
   nativeConfig->allow_codec_switching = _allowCodecSwitching;
+    
+  nativeConfig->min_port = _minPort;
+  nativeConfig->max_port = _maxPort;
+    
+  nativeConfig->proxy_type = [[self class] nativeProxyTypeForProxyType:_proxyType ];
+  nativeConfig->proxy_address = std::string([_proxyAddress cStringUsingEncoding:NSASCIIStringEncoding]);
+  nativeConfig->proxy_port = _proxyPort;
+  nativeConfig->proxy_user = std::string([_proxyUsername cStringUsingEncoding:NSASCIIStringEncoding]);
+  nativeConfig->proxy_password = std::string([_proxyPassword cStringUsingEncoding:NSASCIIStringEncoding]);
+
   return nativeConfig.release();
 }
 
@@ -510,6 +529,19 @@
     case RTCSdpSemanticsUnifiedPlan:
       return @"UNIFIED_PLAN";
   }
+}
+
++ (rtc::ProxyType)nativeProxyTypeForProxyType:(RTCProxyType)proxyType {
+    switch (proxyType) {
+      case RTCProxyTypeNone:
+        return rtc::ProxyType::PROXY_NONE;
+      case RTCProxyTypeHTTPS:
+        return rtc::ProxyType::PROXY_HTTPS;
+      case RTCProxyTypeSOCKS5:
+        return rtc::ProxyType::PROXY_SOCKS5;
+      case RTCProxyTypeUnknown:
+        return rtc::ProxyType::PROXY_UNKNOWN;
+    }
 }
 
 @end

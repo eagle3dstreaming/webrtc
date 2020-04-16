@@ -119,6 +119,7 @@
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_stream_adapter.h"
 #include "rtc_base/system/rtc_export.h"
+#include "rtc_base/proxy_info.h"
 
 namespace rtc {
 class Thread;
@@ -671,6 +672,22 @@ class RTC_EXPORT PeerConnectionInterface : public rtc::RefCountInterface {
 
     // Whether network condition based codec switching is allowed.
     absl::optional<bool> allow_codec_switching;
+
+    /////////////////////////////////////////////////
+    // The below fields are added by ScopeAR
+    /////////////////////////////////////////////////
+
+    // Network Options
+    // Specify an allowed port range for WebRTC to use for media
+    uint16_t min_port = 0;
+    uint16_t max_port = 0;
+
+    // Specify Proxy settings for TCP traffic
+    rtc::ProxyType proxy_type;
+    std::string proxy_address;
+    uint16_t proxy_port;
+    std::string proxy_user;
+    std::string proxy_password;
 
     //
     // Don't forget to update operator== if adding something.

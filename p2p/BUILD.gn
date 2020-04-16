@@ -24,6 +24,8 @@ rtc_library("rtc_p2p") {
     "base/basic_async_resolver_factory.h",
     "base/basic_ice_controller.cc",
     "base/basic_ice_controller.h",
+    "base/proxy_packet_socket_factory.cc",
+    "base/proxy_packet_socket_factory.h",
     "base/basic_packet_socket_factory.cc",
     "base/basic_packet_socket_factory.h",
     "base/candidate_pair_interface.h",

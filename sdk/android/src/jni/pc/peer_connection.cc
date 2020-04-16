@@ -120,6 +120,26 @@ SdpSemantics JavaToNativeSdpSemantics(JNIEnv* jni,
   return SdpSemantics::kPlanB;
 }
 
+rtc::ProxyType JavaToNativeProxyType(JNIEnv* jni,
+                                      const JavaRef<jobject>& j_proxy_type) {
+  std::string enum_name = GetJavaEnumName(jni, j_proxy_type);
+
+  if (enum_name == "NONE")
+    return rtc::ProxyType::PROXY_NONE;
+
+  if (enum_name == "HTTPS")
+    return rtc::ProxyType::PROXY_HTTPS;
+    
+  if (enum_name == "SOCKS5")
+    return rtc::ProxyType::PROXY_SOCKS5;
+
+  if (enum_name == "UNKNOWN")
+    return rtc::ProxyType::PROXY_UNKNOWN;
+
+  RTC_NOTREACHED();
+  return rtc::ProxyType::PROXY_NONE;
+}
+
 ScopedJavaLocalRef<jobject> NativeToJavaCandidatePairChange(
     JNIEnv* env,
     const cricket::CandidatePairChangeEvent& event) {
@@ -287,6 +307,33 @@ void JavaToNativeRTCConfiguration(
   if (!IsNull(jni, j_turn_logging_id)) {
     rtc_config->turn_logging_id = JavaToNativeString(jni, j_turn_logging_id);
   }
+
+  rtc_config->min_port =
+    Java_RTCConfiguration_getMinPort(jni, j_rtc_config);
+  rtc_config->max_port =
+    Java_RTCConfiguration_getMaxPort(jni, j_rtc_config);
+
+  ScopedJavaLocalRef<jobject> j_proxy_type =
+      Java_RTCConfiguration_getProxyType(jni, j_rtc_config);
+  rtc_config->proxy_type = JavaToNativeProxyType(jni, j_proxy_type);
+
+  ScopedJavaLocalRef<jstring> j_proxy_address =
+      Java_RTCConfiguration_getProxyAddress(jni, j_rtc_config);
+  if (!IsNull(jni, j_proxy_address)) {
+    rtc_config->proxy_address = JavaToNativeString(jni, j_proxy_address);
+
+  rtc_config->proxy_port =
+    Java_RTCConfiguration_getProxyPort(jni, j_rtc_config);
+
+  ScopedJavaLocalRef<jstring> j_proxy_username =
+      Java_RTCConfiguration_getProxyUsername(jni, j_rtc_config);
+  if (!IsNull(jni, j_proxy_username)) {
+    rtc_config->proxy_user = JavaToNativeString(jni, j_proxy_username);
+
+  ScopedJavaLocalRef<jstring> j_proxy_password =
+      Java_RTCConfiguration_getProxyPassword(jni, j_rtc_config);
+  if (!IsNull(jni, j_proxy_password)) {
+    rtc_config->proxy_password = JavaToNativeString(jni, j_proxy_password);
 }
 
 rtc::KeyType GetRtcConfigKeyType(JNIEnv* env,
