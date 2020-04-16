@@ -25,7 +25,6 @@ static void JNI_AudioTrack_SetVolume(JNIEnv*,
 }
 
 static void JNI_AudioTrack_AddSink(JNIEnv*,
-                                   const JavaParamRef<jclass>&,
                                    jlong j_native_track,
                                    jlong j_native_sink) {
   rtc::scoped_refptr<AudioSourceInterface> source(
@@ -34,7 +33,6 @@ static void JNI_AudioTrack_AddSink(JNIEnv*,
 }
 
 static void JNI_AudioTrack_RemoveSink(JNIEnv*,
-                                      const JavaParamRef<jclass>&,
                                       jlong j_native_track,
                                       jlong j_native_sink) {
   rtc::scoped_refptr<AudioSourceInterface> source(
@@ -43,13 +41,11 @@ static void JNI_AudioTrack_RemoveSink(JNIEnv*,
 }
 
 static jlong JNI_AudioTrack_WrapSink(JNIEnv* jni,
-                                     const JavaParamRef<jclass>&,
                                      const JavaParamRef<jobject>& sink) {
   return jlongFromPointer(new AudioSinkWrapper(jni, sink));
 }
 
 static void JNI_AudioTrack_FreeSink(JNIEnv* jni,
-                                    const JavaParamRef<jclass>&,
                                     jlong j_native_sink) {
   delete reinterpret_cast<AudioSinkWrapper*>(j_native_sink);
 }
