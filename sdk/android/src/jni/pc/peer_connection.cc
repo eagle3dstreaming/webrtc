@@ -321,6 +321,7 @@ void JavaToNativeRTCConfiguration(
       Java_RTCConfiguration_getProxyAddress(jni, j_rtc_config);
   if (!IsNull(jni, j_proxy_address)) {
     rtc_config->proxy_address = JavaToNativeString(jni, j_proxy_address);
+  }
 
   rtc_config->proxy_port =
     Java_RTCConfiguration_getProxyPort(jni, j_rtc_config);
@@ -329,11 +330,13 @@ void JavaToNativeRTCConfiguration(
       Java_RTCConfiguration_getProxyUsername(jni, j_rtc_config);
   if (!IsNull(jni, j_proxy_username)) {
     rtc_config->proxy_user = JavaToNativeString(jni, j_proxy_username);
+  }
 
   ScopedJavaLocalRef<jstring> j_proxy_password =
       Java_RTCConfiguration_getProxyPassword(jni, j_rtc_config);
   if (!IsNull(jni, j_proxy_password)) {
     rtc_config->proxy_password = JavaToNativeString(jni, j_proxy_password);
+  }
 }
 
 rtc::KeyType GetRtcConfigKeyType(JNIEnv* env,
