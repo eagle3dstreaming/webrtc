@@ -29,7 +29,6 @@
 #include "media/base/rtp_data_engine.h"
 #include "media/sctp/sctp_transport.h"
 #include "p2p/base/basic_async_resolver_factory.h"
-#include "p2p/base/basic_packet_socket_factory.h"
 #include "p2p/base/proxy_packet_socket_factory.h"
 #include "p2p/base/default_ice_transport_factory.h"
 #include "p2p/client/basic_port_allocator.h"
@@ -134,7 +133,7 @@ bool PeerConnectionFactory::Initialize() {
   }
 
   default_socket_factory_.reset(
-      new rtc::BasicPacketSocketFactory(network_thread_));
+      new rtc::ProxyPacketSocketFactory(network_thread_));
   if (!default_socket_factory_) {
     return false;
   }
@@ -256,25 +255,7 @@ PeerConnectionFactory::CreatePeerConnection(
         std::make_unique<rtc::RTCCertificateGenerator>(signaling_thread_,
                                                        network_thread_);
   }
-    
-  if (configuration.proxy_type != rtc::ProxyType::PROXY_NONE)
-  {
-    std::unique_ptr<rtc::ProxyPacketSocketFactory> packet_socket_factory(new rtc::ProxyPacketSocketFactory(network_thread_));
-      
-    struct rtc::ProxyInfo proxy_info;
-    proxy_info.type = configuration.proxy_type;
-    proxy_info.address = rtc::SocketAddress(configuration.proxy_address, configuration.proxy_port);
-    proxy_info.username = configuration.proxy_user;
 
-    auto cryptPass = rtc::InsecureCryptStringImpl();
-    cryptPass.password() = configuration.proxy_password;
-
-    proxy_info.password = rtc::CryptString(cryptPass);
-
-    packet_socket_factory->SetProxyInformation(proxy_info);
-    dependencies.packet_socket_factory = (std::move(packet_socket_factory));
-  }
-    
   if (!dependencies.allocator) {
     rtc::PacketSocketFactory* packet_socket_factory;
     if (dependencies.packet_socket_factory)
@@ -290,7 +271,22 @@ PeerConnectionFactory::CreatePeerConnection(
           configuration.turn_customizer);
     });
   }
-    
+
+  if (configuration.proxy_type != rtc::ProxyType::PROXY_NONE)
+  {
+    struct rtc::ProxyInfo proxy_info;
+    proxy_info.type = configuration.proxy_type;
+    proxy_info.address = rtc::SocketAddress(configuration.proxy_address, configuration.proxy_port);
+    proxy_info.username = configuration.proxy_user;
+
+    auto cryptPass = rtc::InsecureCryptStringImpl();
+    cryptPass.password() = configuration.proxy_password;
+
+    proxy_info.password = rtc::CryptString(cryptPass);
+
+    default_socket_factory_->SetProxyInformation(proxy_info);
+  }
+
   if(!dependencies.allocator->SetPortRange(configuration.min_port, configuration.max_port))
   {
     RTC_LOG(LS_WARNING) << "Unable to set specified port range.";
