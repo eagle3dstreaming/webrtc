@@ -67,7 +67,7 @@ std::unique_ptr<VideoEncoder> MultiplexAugmentOnlyEncoderFactory::CreateVideoEnc
   const auto& it =
       format.parameters.find(cricket::kCodecParamAssociatedCodecName);
   if (it == format.parameters.end()) {
-    RTC_LOG(LS_ERROR) << "No assicated codec for multiplex.";
+    RTC_LOG(LS_ERROR) << "No associated codec for multiplex.";
     return nullptr;
   }
   SdpVideoFormat associated_format = format;

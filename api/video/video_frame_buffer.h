@@ -50,6 +50,7 @@ class RTC_EXPORT VideoFrameBuffer : public rtc::RefCountInterface {
     kI420A,
     kI444,
     kI010,
+    kAugmented,
   };
 
   // This function specifies in what pixel format the data is stored in.

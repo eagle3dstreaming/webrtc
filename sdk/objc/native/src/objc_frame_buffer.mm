@@ -11,7 +11,10 @@
 #include "sdk/objc/native/src/objc_frame_buffer.h"
 
 #import "base/RTCVideoFrameBuffer.h"
+#import "sdk/objc/components/video_frame_buffer/RTCCVPixelBuffer.h"
+#import "sdk/objc/components/video_frame_buffer/RTCAugmentedVideoBuffer.h"
 #import "sdk/objc/api/video_frame_buffer/RTCNativeI420Buffer+Private.h"
+#include "modules/video_coding/codecs/multiplex/include/augmented_video_frame_buffer.h"
 
 namespace webrtc {
 
@@ -77,7 +80,13 @@ id<RTCVideoFrameBuffer> ObjCFrameBuffer::wrapped_frame_buffer() const {
 }
 
 id<RTCVideoFrameBuffer> ToObjCVideoFrameBuffer(const rtc::scoped_refptr<VideoFrameBuffer>& buffer) {
-  if (buffer->type() == VideoFrameBuffer::Type::kNative) {
+  if(buffer->type() == VideoFrameBuffer::Type::kAugmented) {
+    AugmentedVideoFrameBuffer* augmentedBuffer = static_cast<AugmentedVideoFrameBuffer*>(buffer.get());
+    RTCCVPixelBuffer* video_buffer = static_cast<ObjCFrameBuffer*>(augmentedBuffer->GetVideoFrameBuffer().get())->wrapped_frame_buffer();
+    NSData* augment_data = [[NSData alloc] initWithBytes:augmentedBuffer->GetAugmentingData() length:augmentedBuffer->GetAugmentingDataSize()];
+    
+    return [[RTCAugmentedVideoBuffer alloc] initWithPixelBuffer:video_buffer.pixelBuffer augmentData:augment_data];
+  } else if (buffer->type() == VideoFrameBuffer::Type::kNative) {
     return static_cast<ObjCFrameBuffer*>(buffer.get())->wrapped_frame_buffer();
   } else {
     return [[RTCI420Buffer alloc] initWithFrameBuffer:buffer->ToI420()];

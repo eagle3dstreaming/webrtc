@@ -40,7 +40,7 @@ uint16_t AugmentedVideoFrameBuffer::GetAugmentingDataSize() const {
 }
 
 VideoFrameBuffer::Type AugmentedVideoFrameBuffer::type() const {
-  return video_frame_buffer_->type();
+  return VideoFrameBuffer::Type::kAugmented;
 }
 
 int AugmentedVideoFrameBuffer::width() const {

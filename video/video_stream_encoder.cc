@@ -1231,7 +1231,8 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
       out_frame.video_frame_buffer()->type();
   const bool is_buffer_type_supported =
       buffer_type == VideoFrameBuffer::Type::kI420 ||
-      (buffer_type == VideoFrameBuffer::Type::kNative &&
+      ((buffer_type == VideoFrameBuffer::Type::kNative ||
+        buffer_type == VideoFrameBuffer::Type::kAugmented) &&
        info.supports_native_handle);
 
   if (!is_buffer_type_supported) {
@@ -1260,8 +1261,11 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
 
   // Crop frame if needed.
   if ((crop_width_ > 0 || crop_height_ > 0) &&
-      out_frame.video_frame_buffer()->type() !=
-          VideoFrameBuffer::Type::kNative) {
+      (out_frame.video_frame_buffer()->type() !=
+          VideoFrameBuffer::Type::kNative || 
+        out_frame.video_frame_buffer()->type() !=
+           VideoFrameBuffer::Type::kAugmented
+          )) {
     // If the frame can't be converted to I420, drop it.
     auto i420_buffer = video_frame.video_frame_buffer()->ToI420();
     if (!i420_buffer) {
@@ -1329,6 +1333,8 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
   // For internal encoders we scale everything in one place here.
   RTC_DCHECK((out_frame.video_frame_buffer()->type() ==
               VideoFrameBuffer::Type::kNative) ||
+             (out_frame.video_frame_buffer()->type() ==
+              VideoFrameBuffer::Type::kAugmented) ||
              (send_codec_.width == out_frame.width() &&
               send_codec_.height == out_frame.height()));
 

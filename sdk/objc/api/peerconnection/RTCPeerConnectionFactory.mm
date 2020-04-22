@@ -41,6 +41,8 @@
 #include "sdk/objc/native/api/video_encoder_factory.h"
 #include "sdk/objc/native/src/objc_video_decoder_factory.h"
 #include "sdk/objc/native/src/objc_video_encoder_factory.h"
+
+#include "media/engine/multiplex_augment_only_codec_factory.h"
 #endif
 
 #if defined(WEBRTC_IOS)
@@ -82,6 +84,24 @@
                                                      [[RTCVideoEncoderFactoryH264 alloc] init])
                        nativeVideoDecoderFactory:webrtc::ObjCToNativeVideoDecoderFactory(
                                                      [[RTCVideoDecoderFactoryH264 alloc] init])
+                               audioDeviceModule:[self audioDeviceModule]
+                           audioProcessingModule:nullptr
+                           mediaTransportFactory:nullptr];
+#endif
+}
+
+- (instancetype)initWithAugment {
+#ifdef HAVE_NO_MEDIA
+  return [self initWithNoMedia];
+#else
+  return [self initWithNativeAudioEncoderFactory:webrtc::CreateBuiltinAudioEncoderFactory()
+                       nativeAudioDecoderFactory:webrtc::CreateBuiltinAudioDecoderFactory()
+                        nativeVideoEncoderFactory:std::make_unique<webrtc::MultiplexAugmentOnlyEncoderFactory>(
+                                                  webrtc::ObjCToNativeVideoEncoderFactory(
+                                                  [[RTCVideoEncoderFactoryH264 alloc] init]), true)
+                        nativeVideoDecoderFactory:std::make_unique<webrtc::MultiplexAugmentOnlyDecoderFactory>(
+                                                  webrtc::ObjCToNativeVideoDecoderFactory(
+                                                  [[RTCVideoDecoderFactoryH264 alloc] init]), true)
                                audioDeviceModule:[self audioDeviceModule]
                            audioProcessingModule:nullptr
                            mediaTransportFactory:nullptr];

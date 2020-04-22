@@ -13,9 +13,11 @@
 #import "base/RTCVideoFrame.h"
 #import "base/RTCVideoFrameBuffer.h"
 #import "components/video_frame_buffer/RTCCVPixelBuffer.h"
+#import "components/video_frame_buffer/RTCAugmentedVideoBuffer.h"
 
 #include "api/video/i420_buffer.h"
 #include "sdk/objc/native/src/objc_frame_buffer.h"
+#include "modules/video_coding/codecs/multiplex/include/augmented_video_frame_buffer.h"
 
 @interface RTCObjCVideoSourceAdapter ()
 @property(nonatomic) webrtc::ObjCVideoTrackSource *objCVideoTrackSource;
@@ -116,11 +118,30 @@ void ObjCVideoTrackSource::OnCapturedFrame(RTCVideoFrame *frame) {
     rotation = kVideoRotation_0;
   }
 
+  // Create a C++ Augmented Video Frame Buffer if needed
+  if ([frame.buffer isKindOfClass:[RTCAugmentedVideoBuffer class]]) {
+    RTCAugmentedVideoBuffer *multiplexBuffer = (RTCAugmentedVideoBuffer *)frame.buffer;
+    uint16_t augmenting_data_length = [multiplexBuffer.augmentData length];
+    auto augmenting_data = std::make_unique<uint8_t[]>(augmenting_data_length);
+    memcpy(augmenting_data.get(),
+           [multiplexBuffer.augmentData bytes],
+           augmenting_data_length);
+
+
+    rtc::scoped_refptr<AugmentedVideoFrameBuffer> augmented_buffer =
+      new rtc::RefCountedObject<AugmentedVideoFrameBuffer>(buffer, 
+                                                           std::move(augmenting_data),
+                                                           augmenting_data_length);
+
+    buffer = augmented_buffer;
+  }
+
   OnFrame(VideoFrame::Builder()
               .set_video_frame_buffer(buffer)
               .set_rotation(rotation)
               .set_timestamp_us(translated_timestamp_us)
               .build());
+
 }
 
 }  // namespace webrtc

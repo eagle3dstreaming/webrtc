@@ -366,6 +366,10 @@ rtc_library("webrtc_multiplex") {
     "codecs/multiplex/multiplex_encoded_image_packer.cc",
     "codecs/multiplex/multiplex_encoded_image_packer.h",
     "codecs/multiplex/multiplex_encoder_adapter.cc",
+    "codecs/multiplex/multiplex_augment_only_encoder_adapter.h",
+    "codecs/multiplex/multiplex_augment_only_encoder_adapter.cc",
+    "codecs/multiplex/multiplex_augment_only_decoder_adapter.h",
+    "codecs/multiplex/multiplex_augment_only_decoder_adapter.cc",
   ]
 
   deps = [
