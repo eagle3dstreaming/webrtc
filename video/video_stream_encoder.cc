@@ -1118,7 +1118,9 @@ void VideoStreamEncoder::MaybeEncodeVideoFrame(const VideoFrame& video_frame,
     ++initial_framedrop_;
     // Storing references to a native buffer risks blocking frame capture.
     if (video_frame.video_frame_buffer()->type() !=
-        VideoFrameBuffer::Type::kNative) {
+        VideoFrameBuffer::Type::kNative ||
+        video_frame.video_frame_buffer()->type() !=
+        VideoFrameBuffer::Type::kAugmented) {
       pending_frame_ = video_frame;
       pending_frame_post_time_us_ = time_when_posted_us;
     } else {
@@ -1144,7 +1146,9 @@ void VideoStreamEncoder::MaybeEncodeVideoFrame(const VideoFrame& video_frame,
   if (EncoderPaused()) {
     // Storing references to a native buffer risks blocking frame capture.
     if (video_frame.video_frame_buffer()->type() !=
-        VideoFrameBuffer::Type::kNative) {
+        VideoFrameBuffer::Type::kNative ||
+        video_frame.video_frame_buffer()->type() !=
+        VideoFrameBuffer::Type::kAugmented) {
       if (pending_frame_)
         TraceFrameDropStart();
       pending_frame_ = video_frame;
