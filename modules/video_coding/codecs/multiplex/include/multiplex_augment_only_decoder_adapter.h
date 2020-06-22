@@ -53,8 +53,8 @@ class MultiplexAugmentOnlyDecoderAdapter : public VideoDecoder {
 
   VideoDecoderFactory* const factory_;
   const SdpVideoFormat associated_format_;
-  std::vector<std::unique_ptr<VideoDecoder>> decoders_;
-  std::vector<std::unique_ptr<AdapterDecodedImageCallback>> adapter_callbacks_;
+  std::unique_ptr<VideoDecoder> decoder_;
+  std::unique_ptr<AdapterDecodedImageCallback> adapter_callback_;
   DecodedImageCallback* decoded_complete_callback_;
 
   std::map<uint32_t /* timestamp */, AugmentingData> decoded_augmenting_data_;

@@ -69,17 +69,15 @@ int32_t MultiplexAugmentOnlyDecoderAdapter::InitDecode(const VideoCodec* codec_s
   RTC_DCHECK_EQ(kVideoCodecMultiplex, codec_settings->codecType);
   VideoCodec settings = *codec_settings;
   settings.codecType = PayloadStringToCodecType(associated_format_.name);
-  for (size_t i = 0; i < kAlphaCodecStreams; ++i) {
-    std::unique_ptr<VideoDecoder> decoder =
-        factory_->CreateVideoDecoder(associated_format_);
-    const int32_t rv = decoder->InitDecode(&settings, number_of_cores);
-    if (rv)
-      return rv;
-    adapter_callbacks_.emplace_back(
-        new MultiplexAugmentOnlyDecoderAdapter::AdapterDecodedImageCallback(this));
-    decoder->RegisterDecodeCompleteCallback(adapter_callbacks_.back().get());
-    decoders_.emplace_back(std::move(decoder));
-  }
+  decoder_ = factory_->CreateVideoDecoder(associated_format_);
+
+  const int32_t rv = decoder_->InitDecode(&settings, number_of_cores);
+  if (rv)
+    return rv;
+  adapter_callback_ = 
+    std::unique_ptr<MultiplexAugmentOnlyDecoderAdapter::AdapterDecodedImageCallback>(
+      new MultiplexAugmentOnlyDecoderAdapter::AdapterDecodedImageCallback(this));
+  decoder_->RegisterDecodeCompleteCallback(adapter_callback_.get());
   return WEBRTC_VIDEO_CODEC_OK;
 }
 
@@ -98,14 +96,12 @@ int32_t MultiplexAugmentOnlyDecoderAdapter::Decode(const EncodedImage& input_ima
                               image.augmenting_data_size));
   }
 
-  int32_t rv = 0;
-  for (size_t i = 0; i < image.image_components.size(); i++) {
-    rv = decoders_[image.image_components[i].component_index]->Decode(
-        image.image_components[i].encoded_image, missing_frames,
-        render_time_ms);
-    if (rv != WEBRTC_VIDEO_CODEC_OK)
-      return rv;
-  }
+  int32_t rv = decoder_->Decode(
+      image.image_components[0].encoded_image, missing_frames,
+      render_time_ms);
+  if (rv != WEBRTC_VIDEO_CODEC_OK)
+    return rv;
+
   return rv;
 }
 
@@ -116,13 +112,12 @@ int32_t MultiplexAugmentOnlyDecoderAdapter::RegisterDecodeCompleteCallback(
 }
 
 int32_t MultiplexAugmentOnlyDecoderAdapter::Release() {
-  for (auto& decoder : decoders_) {
-    const int32_t rv = decoder->Release();
-    if (rv)
-      return rv;
+  if(decoder_ != nullptr)
+  {
+  const int32_t rv = decoder_->Release();
+  if (rv)
+    return rv;
   }
-  decoders_.clear();
-  adapter_callbacks_.clear();
   return WEBRTC_VIDEO_CODEC_OK;
 }
 

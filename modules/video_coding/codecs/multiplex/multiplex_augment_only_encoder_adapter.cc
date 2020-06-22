@@ -23,9 +23,8 @@ namespace webrtc {
 class MultiplexAugmentOnlyEncoderAdapter::AdapterEncodedImageCallback
     : public webrtc::EncodedImageCallback {
  public:
-  AdapterEncodedImageCallback(webrtc::MultiplexAugmentOnlyEncoderAdapter* adapter,
-                              AlphaCodecStream stream_idx)
-      : adapter_(adapter), stream_idx_(stream_idx) {}
+  AdapterEncodedImageCallback(webrtc::MultiplexAugmentOnlyEncoderAdapter* adapter)
+      : adapter_(adapter) {}
 
   EncodedImageCallback::Result OnEncodedImage(
       const EncodedImage& encoded_image,
@@ -33,13 +32,13 @@ class MultiplexAugmentOnlyEncoderAdapter::AdapterEncodedImageCallback
       const RTPFragmentationHeader* fragmentation) override {
     if (!adapter_)
       return Result(Result::OK);
-    return adapter_->OnEncodedImage(stream_idx_, encoded_image,
+
+    return adapter_->OnEncodedImage(encoded_image,
                                     codec_specific_info, fragmentation);
   }
 
  private:
   MultiplexAugmentOnlyEncoderAdapter* adapter_;
-  const AlphaCodecStream stream_idx_;
 };
 
 MultiplexAugmentOnlyEncoderAdapter::MultiplexAugmentOnlyEncoderAdapter(
@@ -49,7 +48,6 @@ MultiplexAugmentOnlyEncoderAdapter::MultiplexAugmentOnlyEncoderAdapter(
     : factory_(factory),
       associated_format_(associated_format),
       encoded_complete_callback_(nullptr),
-      key_frame_interval_(0),
       supports_augmented_data_(supports_augmented_data) {}
 
 MultiplexAugmentOnlyEncoderAdapter::~MultiplexAugmentOnlyEncoderAdapter() {
@@ -64,79 +62,41 @@ void MultiplexAugmentOnlyEncoderAdapter::SetFecControllerOverride(
 int MultiplexAugmentOnlyEncoderAdapter::InitEncode(
     const VideoCodec* inst,
     const VideoEncoder::Settings& settings) {
-  const size_t buffer_size =
-      CalcBufferSize(VideoType::kI420, inst->width, inst->height);
-  multiplex_dummy_planes_.resize(buffer_size);
-  // It is more expensive to encode 0x00, so use 0x80 instead.
-  std::fill(multiplex_dummy_planes_.begin(), multiplex_dummy_planes_.end(),
-            0x80);
-
   RTC_DCHECK_EQ(kVideoCodecMultiplex, inst->codecType);
   VideoCodec video_codec = *inst;
   video_codec.codecType = PayloadStringToCodecType(associated_format_.name);
-
-  // Take over the key frame interval at adapter level, because we have to
-  // sync the key frames for both sub-encoders.
-  switch (video_codec.codecType) {
-    case kVideoCodecVP8:
-      key_frame_interval_ = video_codec.VP8()->keyFrameInterval;
-      video_codec.VP8()->keyFrameInterval = 0;
-      break;
-    case kVideoCodecVP9:
-      key_frame_interval_ = video_codec.VP9()->keyFrameInterval;
-      video_codec.VP9()->keyFrameInterval = 0;
-      break;
-    case kVideoCodecH264:
-      key_frame_interval_ = video_codec.H264()->keyFrameInterval;
-      video_codec.H264()->keyFrameInterval = 0;
-      break;
-    default:
-      break;
-  }
 
   encoder_info_ = EncoderInfo();
   encoder_info_.implementation_name = "MultiplexAugmentOnlyEncoderAdapter (";
   encoder_info_.requested_resolution_alignment = 1;
 
-  for (size_t i = 0; i < kAlphaCodecStreams; ++i) {
-    std::unique_ptr<VideoEncoder> encoder =
-        factory_->CreateVideoEncoder(associated_format_);
-    const int rv = encoder->InitEncode(&video_codec, settings);
-    if (rv) {
-      RTC_LOG(LS_ERROR) << "Failed to create multiplex codec index " << i;
-      return rv;
-    }
-    adapter_callbacks_.emplace_back(new AdapterEncodedImageCallback(
-        this, static_cast<AlphaCodecStream>(i)));
-    encoder->RegisterEncodeCompleteCallback(adapter_callbacks_.back().get());
-
-    const EncoderInfo& encoder_impl_info = encoder->GetEncoderInfo();
-    encoder_info_.implementation_name += encoder_impl_info.implementation_name;
-    if (i != kAlphaCodecStreams - 1) {
-      encoder_info_.implementation_name += ", ";
-    }
-    // Uses hardware support if any of the encoders uses it.
-    // For example, if we are having issues with down-scaling due to
-    // pipelining delay in HW encoders we need higher encoder usage
-    // thresholds in CPU adaptation.
-    if (i == 0) {
-      encoder_info_.is_hardware_accelerated =
-          encoder_impl_info.is_hardware_accelerated;
-    } else {
-      encoder_info_.is_hardware_accelerated |=
-          encoder_impl_info.is_hardware_accelerated;
-    }
-      
-    encoder_info_.supports_native_handle = encoder_impl_info.supports_native_handle;
-
-    encoder_info_.requested_resolution_alignment = cricket::LeastCommonMultiple(
-        encoder_info_.requested_resolution_alignment,
-        encoder_impl_info.requested_resolution_alignment);
-
-    encoder_info_.has_internal_source = false;
-
-    encoders_.emplace_back(std::move(encoder));
+  encoder_ = factory_->CreateVideoEncoder(associated_format_);
+  const int rv = encoder_->InitEncode(&video_codec, settings);
+  if (rv) {
+    RTC_LOG(LS_ERROR) << "Failed to create multiplex codec.";
+    return rv;
   }
+  adapter_callback_ = std::unique_ptr<AdapterEncodedImageCallback>(new AdapterEncodedImageCallback(this));
+  encoder_->RegisterEncodeCompleteCallback(adapter_callback_.get());
+
+  const EncoderInfo& encoder_impl_info = encoder_->GetEncoderInfo();
+  encoder_info_.implementation_name += encoder_impl_info.implementation_name;
+
+  // Uses hardware support if any of the encoders uses it.
+  // For example, if we are having issues with down-scaling due to
+  // pipelining delay in HW encoders we need higher encoder usage
+  // thresholds in CPU adaptation.
+  encoder_info_.is_hardware_accelerated =
+      encoder_impl_info.is_hardware_accelerated;
+
+  encoder_info_.supports_native_handle = encoder_impl_info.supports_native_handle;
+
+  encoder_info_.requested_resolution_alignment = cricket::LeastCommonMultiple(
+      encoder_info_.requested_resolution_alignment,
+      encoder_impl_info.requested_resolution_alignment);
+
+  encoder_info_.has_internal_source = false;
+
   encoder_info_.implementation_name += ")";
 
   return WEBRTC_VIDEO_CODEC_OK;
@@ -149,12 +109,6 @@ int MultiplexAugmentOnlyEncoderAdapter::Encode(
     return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
   }
 
-  std::vector<VideoFrameType> adjusted_frame_types;
-  if (key_frame_interval_ > 0 && picture_index_ % key_frame_interval_ == 0) {
-    adjusted_frame_types.push_back(VideoFrameType::kVideoFrameKey);
-  } else {
-    adjusted_frame_types.push_back(VideoFrameType::kVideoFrameDelta);
-  }
   std::unique_ptr<uint8_t[]> augmenting_data = nullptr;
   uint16_t augmenting_data_length = 0;
   AugmentedVideoFrameBuffer* augmented_video_frame_buffer = nullptr;
@@ -184,7 +138,7 @@ int MultiplexAugmentOnlyEncoderAdapter::Encode(
   ++picture_index_;
 
   // Encode YUV
-  int rv = encoders_[kYUVStream]->Encode(input_image, &adjusted_frame_types);
+  int rv = encoder_->Encode(input_image, frame_types);
     
   return rv;
 }
@@ -200,45 +154,34 @@ void MultiplexAugmentOnlyEncoderAdapter::SetRates(
   VideoBitrateAllocation bitrate_allocation(parameters.bitrate);
   bitrate_allocation.SetBitrate(
       0, 0, parameters.bitrate.GetBitrate(0, 0) - augmenting_data_size_);
-  for (auto& encoder : encoders_) {
-    // TODO(emircan): |framerate| is used to calculate duration in encoder
-    // instances. We report the total frame rate to keep real time for now.
-    // Remove this after refactoring duration logic.
-    encoder->SetRates(RateControlParameters(
-        bitrate_allocation,
-        static_cast<uint32_t>(encoders_.size() * parameters.framerate_fps),
-        parameters.bandwidth_allocation -
-            DataRate::bps(augmenting_data_size_)));
-  }
+  // TODO(emircan): |framerate| is used to calculate duration in encoder
+  // instances. We report the total frame rate to keep real time for now.
+  // Remove this after refactoring duration logic.
+  encoder_->SetRates(RateControlParameters(
+      bitrate_allocation,
+      static_cast<uint32_t>(parameters.framerate_fps),
+      parameters.bandwidth_allocation -
+          DataRate::bps(augmenting_data_size_)));
 }
 
 void MultiplexAugmentOnlyEncoderAdapter::OnPacketLossRateUpdate(float packet_loss_rate) {
-  for (auto& encoder : encoders_) {
-    encoder->OnPacketLossRateUpdate(packet_loss_rate);
-  }
+  encoder_->OnPacketLossRateUpdate(packet_loss_rate);
 }
 
 void MultiplexAugmentOnlyEncoderAdapter::OnRttUpdate(int64_t rtt_ms) {
-  for (auto& encoder : encoders_) {
-    encoder->OnRttUpdate(rtt_ms);
-  }
+  encoder_->OnRttUpdate(rtt_ms);
 }
 
 void MultiplexAugmentOnlyEncoderAdapter::OnLossNotification(
     const LossNotification& loss_notification) {
-  for (auto& encoder : encoders_) {
-    encoder->OnLossNotification(loss_notification);
-  }
+  encoder_->OnLossNotification(loss_notification);
 }
 
 int MultiplexAugmentOnlyEncoderAdapter::Release() {
-  for (auto& encoder : encoders_) {
-    const int rv = encoder->Release();
-    if (rv)
-      return rv;
-  }
-  encoders_.clear();
-  adapter_callbacks_.clear();
+  const int rv = encoder_->Release();
+  if (rv)
+    return rv;
+
   rtc::CritScope cs(&crit_);
   stashed_images_.clear();
 
@@ -250,13 +193,12 @@ VideoEncoder::EncoderInfo MultiplexAugmentOnlyEncoderAdapter::GetEncoderInfo() c
 }
 
 EncodedImageCallback::Result MultiplexAugmentOnlyEncoderAdapter::OnEncodedImage(
-    AlphaCodecStream stream_idx,
     const EncodedImage& encodedImage,
     const CodecSpecificInfo* codecSpecificInfo,
     const RTPFragmentationHeader* fragmentation) {
   // Save the image
   MultiplexImageComponent image_component;
-  image_component.component_index = stream_idx;
+  image_component.component_index = 1;
   image_component.codec_type =
       PayloadStringToCodecType(associated_format_.name);
   image_component.encoded_image = encodedImage;
@@ -270,32 +212,17 @@ EncodedImageCallback::Result MultiplexAugmentOnlyEncoderAdapter::OnEncodedImage(
   const auto& stashed_image_next_itr = std::next(stashed_image_itr, 1);
   RTC_DCHECK(stashed_image_itr != stashed_images_.end());
   MultiplexImage& stashed_image = stashed_image_itr->second;
-  const uint8_t frame_count = stashed_image.component_count;
 
   stashed_image.image_components.push_back(image_component);
 
-  if (stashed_image.image_components.size() == frame_count) {
-    // Complete case
-    for (auto iter = stashed_images_.begin();
-         iter != stashed_images_.end() && iter != stashed_image_next_itr;
-         iter++) {
-      // No image at all, skip.
-      if (iter->second.image_components.size() == 0)
-        continue;
+  CodecSpecificInfo codec_info = *codecSpecificInfo;
+  codec_info.codecType = kVideoCodecMultiplex;
+  encoded_complete_callback_->OnEncodedImage(MultiplexEncodedImagePacker::PackAndRelease(stashed_image),
+                                              &codec_info,
+                                              fragmentation);
 
-      // We have to send out those stashed frames, otherwise the delta frame
-      // dependency chain is broken.
-      combined_image_ =
-          MultiplexEncodedImagePacker::PackAndRelease(iter->second);
+  stashed_images_.erase(stashed_images_.begin(), stashed_image_next_itr);
 
-      CodecSpecificInfo codec_info = *codecSpecificInfo;
-      codec_info.codecType = kVideoCodecMultiplex;
-      encoded_complete_callback_->OnEncodedImage(combined_image_, &codec_info,
-                                                 fragmentation);
-    }
-
-    stashed_images_.erase(stashed_images_.begin(), stashed_image_next_itr);
-  }
   return EncodedImageCallback::Result(EncodedImageCallback::Result::OK);
 }
 

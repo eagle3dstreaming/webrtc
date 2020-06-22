@@ -44,7 +44,6 @@ class MultiplexAugmentOnlyEncoderAdapter : public VideoEncoder {
   EncoderInfo GetEncoderInfo() const override;
 
   EncodedImageCallback::Result OnEncodedImage(
-      AlphaCodecStream stream_idx,
       const EncodedImage& encodedImage,
       const CodecSpecificInfo* codecSpecificInfo,
       const RTPFragmentationHeader* fragmentation);
@@ -55,18 +54,14 @@ class MultiplexAugmentOnlyEncoderAdapter : public VideoEncoder {
 
   VideoEncoderFactory* const factory_;
   const SdpVideoFormat associated_format_;
-  std::vector<std::unique_ptr<VideoEncoder>> encoders_;
-  std::vector<std::unique_ptr<AdapterEncodedImageCallback>> adapter_callbacks_;
+  std::unique_ptr<VideoEncoder> encoder_;
+  std::unique_ptr<AdapterEncodedImageCallback> adapter_callback_;
   EncodedImageCallback* encoded_complete_callback_;
 
   std::map<uint32_t /* timestamp */, MultiplexImage> stashed_images_
       RTC_GUARDED_BY(crit_);
 
   uint16_t picture_index_ = 0;
-  std::vector<uint8_t> multiplex_dummy_planes_;
-
-  int key_frame_interval_;
-  EncodedImage combined_image_;
 
   rtc::CriticalSection crit_;
 
