@@ -70,6 +70,9 @@ class AnnexBBufferReader final {
   // If the buffer has no remaining NALUs this will return zero.
   size_t BytesRemaining() const;
 
+  // Returns the number of unread NALU blocks with short headers 
+  size_t ShortBlocksRemaining() const;
+
   // Reset the reader to start reading from the first NALU
   void SeekToStart();
 
@@ -89,6 +92,7 @@ class AnnexBBufferReader final {
   std::vector<NaluIndex> offsets_;
   std::vector<NaluIndex>::iterator offset_;
   const size_t length_;
+  size_t shortBlocks_;
 };
 
 // Helper class for writing NALUs using avcc format into a buffer.

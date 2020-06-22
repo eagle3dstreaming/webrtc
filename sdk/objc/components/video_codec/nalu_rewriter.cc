@@ -186,12 +186,15 @@ bool H264AnnexBBufferToCMSampleBuffer(const uint8_t* annexb_buffer,
   // Allocate memory as a block buffer.
   CMBlockBufferRef block_buffer = nullptr;
   CFAllocatorRef block_allocator = CMMemoryPoolGetAllocator(memory_pool);
+
+  size_t buffsize = reader.BytesRemaining() + reader.ShortBlocksRemaining();
+
   OSStatus status = CMBlockBufferCreateWithMemoryBlock(
-      kCFAllocatorDefault, nullptr, reader.BytesRemaining(), block_allocator,
-      nullptr, 0, reader.BytesRemaining(), kCMBlockBufferAssureMemoryNowFlag,
+      kCFAllocatorDefault, nullptr, buffsize, block_allocator,
+      nullptr, 0, buffsize, kCMBlockBufferAssureMemoryNowFlag,
       &block_buffer);
   if (status != kCMBlockBufferNoErr) {
-    RTC_LOG(LS_ERROR) << "Failed to create block buffer.";
+    RTC_LOG(LS_ERROR) << "Failed to create block buffer. size: " << buffsize;
     return false;
   }
 
@@ -222,7 +225,7 @@ bool H264AnnexBBufferToCMSampleBuffer(const uint8_t* annexb_buffer,
     CFRelease(contiguous_buffer);
     return false;
   }
-  RTC_DCHECK(block_buffer_size == reader.BytesRemaining());
+  RTC_DCHECK(block_buffer_size == buffsize);
 
   // Write Avcc NALUs into block buffer memory.
   AvccBufferWriter writer(reinterpret_cast<uint8_t*>(data_ptr),
@@ -280,10 +283,18 @@ CMVideoFormatDescriptionRef CreateVideoFormatDescription(
 
 AnnexBBufferReader::AnnexBBufferReader(const uint8_t* annexb_buffer,
                                        size_t length)
-    : start_(annexb_buffer), length_(length) {
+    : start_(annexb_buffer), length_(length), shortBlocks_(0) {
   RTC_DCHECK(annexb_buffer);
   offsets_ = H264::FindNaluIndices(annexb_buffer, length);
   offset_ = offsets_.begin();
+
+  for (auto offset = offsets_.begin(); offset != offsets_.end(); ++offset)
+  {  
+      if (offset->payload_start_offset - offset->start_offset < 4)
+      {
+        ++shortBlocks_;
+      }
+  }
 }
 
 AnnexBBufferReader::~AnnexBBufferReader() = default;
@@ -300,6 +311,12 @@ bool AnnexBBufferReader::ReadNalu(const uint8_t** out_nalu,
   }
   *out_nalu = start_ + offset_->payload_start_offset;
   *out_length = offset_->payload_size;
+
+  if (offset_->payload_start_offset - offset_->start_offset < 4)
+  {
+    --shortBlocks_;
+  }
+
   ++offset_;
   return true;
 }
@@ -309,6 +326,10 @@ size_t AnnexBBufferReader::BytesRemaining() const {
     return 0;
   }
   return length_ - offset_->start_offset;
+}
+
+size_t AnnexBBufferReader::ShortBlocksRemaining() const {
+  return shortBlocks_;
 }
 
 void AnnexBBufferReader::SeekToStart() {
