@@ -137,6 +137,11 @@ void MultiplexAugmentOnlyDecoderAdapter::Decoded(VideoFrame* decoded_image,
       
   MergeAugmentedImages(decoded_image, decode_time_ms, qp,
                   std::move(augmenting_data), augmenting_data_size);
+
+  if (has_augmenting_data) {
+    decoded_augmenting_data_.erase(decoded_augmenting_data_.begin(),
+                                  std::next(augmenting_data_it, 1));
+  }
 }
 
 void MultiplexAugmentOnlyDecoderAdapter::MergeAugmentedImages(
