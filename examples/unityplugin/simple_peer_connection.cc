@@ -12,6 +12,7 @@
 
 #include <utility>
 
+
 #include "absl/memory/memory.h"
 #include "api/audio_codecs/builtin_audio_decoder_factory.h"
 #include "api/audio_codecs/builtin_audio_encoder_factory.h"
@@ -30,6 +31,14 @@
 #include "modules/utility/include/helpers_android.h"
 #include "sdk/android/src/jni/android_video_track_source.h"
 #include "sdk/android/src/jni/jni_helpers.h"
+
+/// arvind
+
+#include <sdk/android/src/jni/video_encoder_factory_wrapper.h>
+#include <sdk/android/src/jni/video_decoder_factory_wrapper.h>
+#include <sdk/android/native_api/jni/scoped_java_ref.h>
+
+
 #endif
 
 // Names used for media stream ids.
@@ -41,6 +50,13 @@ namespace {
 static int g_peer_count = 0;
 static std::unique_ptr<rtc::Thread> g_worker_thread;
 static std::unique_ptr<rtc::Thread> g_signaling_thread;
+
+static std::unique_ptr<rtc::Thread> g_network_thread;
+static bool fSetReoteDesc =false;
+static  std::list< std::unique_ptr <webrtc::IceCandidateInterface> > store_candidate;
+
+
+
 static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
     g_peer_connection_factory;
 #if defined(WEBRTC_ANDROID)
@@ -49,6 +65,50 @@ static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
 // shuts down.
 static jobject g_camera = nullptr;
 #else
+
+    class TestVcmCapturer : public webrtc::test::TestVideoCapturer,
+                        public rtc::VideoSinkInterface<webrtc::VideoFrame> {
+    public:
+        static TestVcmCapturer *Create(size_t width,
+                                       size_t height,
+                                       size_t target_fps,
+                                       size_t capture_device_index) {
+            int x = 0;
+
+        }
+
+        virtual ~TestVcmCapturer();
+
+        virtual const webrtc::VideoFrame Preprocess(const const webrtc::VideoFrame &frame)
+        {
+            int x = 0;
+
+        }
+
+        void OnFrame(const webrtc::VideoFrame& frame) {
+
+            int x = 0;
+
+        }
+
+    private:
+        TestVcmCapturer();
+        bool Init(size_t width,
+                  size_t height,
+                  size_t target_fps,
+                  size_t capture_device_index)
+        {
+            int x = 0;
+        }
+        void Destroy() {
+            int x = 0;
+        }
+
+
+        rtc::scoped_refptr<webrtc::VideoCaptureModule> vcm_;
+        webrtc::VideoCaptureCapability capability_;
+    };
+
 class CapturerTrackSource : public webrtc::VideoTrackSource {
  public:
   static rtc::scoped_refptr<CapturerTrackSource> Create() {
@@ -56,8 +116,8 @@ class CapturerTrackSource : public webrtc::VideoTrackSource {
     const size_t kHeight = 480;
     const size_t kFps = 30;
     const size_t kDeviceIndex = 0;
-    std::unique_ptr<webrtc::test::VcmCapturer> capturer = absl::WrapUnique(
-        webrtc::test::VcmCapturer::Create(kWidth, kHeight, kFps, kDeviceIndex));
+    std::unique_ptr< TestVcmCapturer> capturer = absl::WrapUnique(
+            TestVcmCapturer::Create(kWidth, kHeight, kFps, kDeviceIndex));
     if (!capturer) {
       return nullptr;
     }
@@ -66,17 +126,48 @@ class CapturerTrackSource : public webrtc::VideoTrackSource {
 
  protected:
   explicit CapturerTrackSource(
-      std::unique_ptr<webrtc::test::VcmCapturer> capturer)
+      std::unique_ptr<TestVcmCapturer> capturer)
       : VideoTrackSource(/*remote=*/false), capturer_(std::move(capturer)) {}
 
  private:
   rtc::VideoSourceInterface<webrtc::VideoFrame>* source() override {
     return capturer_.get();
   }
-  std::unique_ptr<webrtc::test::VcmCapturer> capturer_;
+  std::unique_ptr<TestVcmCapturer> capturer_;
 };
 
 #endif
+
+////////////////////////////////////////////////////
+/*#include "sdk/android/src/jni/pc/video.h"
+
+#include <jni.h>
+#include <memory>
+
+#include "api/video_codecs/video_decoder_factory.h"
+#include "api/video_codecs/video_encoder_factory.h"
+#include "rtc_base/logging.h"
+#include "sdk/android/native_api/jni/java_types.h"
+#include "base/android/scoped_java_ref.h"
+#include "sdk/android/src/jni/video_decoder_factory_wrapper.h"
+#include "sdk/android/src/jni/video_encoder_factory_wrapper.h"
+
+
+*/
+
+    webrtc::VideoDecoderFactory* CreateVideoDecoderFactory( JNIEnv* jni,  const  webrtc::JavaRef<jobject>& j_decoder_factory) {
+           return   new  webrtc::jni::VideoDecoderFactoryWrapper(jni, j_decoder_factory);
+    }
+
+    webrtc::VideoEncoderFactory* CreateVideoEncoderFactory(  JNIEnv* jni, const webrtc::JavaRef<jobject>& j_encoder_factory)
+    {
+      return  new  webrtc::jni::VideoEncoderFactoryWrapper(jni, j_encoder_factory);
+    }
+
+
+
+///////////////////////////////////////////////////
+
 
 std::string GetEnvVarOrDefault(const char* env_var_name,
                                const char* default_value) {
@@ -122,22 +213,70 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
   RTC_DCHECK(peer_connection_.get() == nullptr);
 
   if (g_peer_connection_factory == nullptr) {
-    g_worker_thread = rtc::Thread::Create();
-    g_worker_thread->Start();
-    g_signaling_thread = rtc::Thread::Create();
-    g_signaling_thread->Start();
+       rtc::InitRandom(rtc::Time());
+       rtc::ThreadManager::Instance()->WrapCurrentThread();
+       g_network_thread = rtc::Thread::CreateWithSocketServer();
+       g_network_thread->SetName("network_thread", nullptr);
+       RTC_CHECK(g_network_thread->Start()) << "Failed to start thread";
 
-    g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
-        g_worker_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
-        nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
-        webrtc::CreateBuiltinAudioDecoderFactory(),
-        std::unique_ptr<webrtc::VideoEncoderFactory>(
-            new webrtc::MultiplexEncoderFactory(
-                std::make_unique<webrtc::InternalEncoderFactory>())),
-        std::unique_ptr<webrtc::VideoDecoderFactory>(
-            new webrtc::MultiplexDecoderFactory(
-                std::make_unique<webrtc::InternalDecoderFactory>())),
-        nullptr, nullptr);
+      g_worker_thread = rtc::Thread::Create();
+      g_worker_thread->SetName("worker_thread", nullptr);
+      RTC_CHECK(g_worker_thread->Start()) << "Failed to start thread";
+
+
+      g_signaling_thread = rtc::Thread::Create();
+      g_signaling_thread->Start();
+
+      JNIEnv* env = webrtc::jni::GetEnv();
+      jclass pc_factory_class =
+                  unity_plugin::FindClass(env, "org/webrtc/UnityUtility");
+      jmethodID ME = webrtc::GetStaticMethodID(
+                  env, pc_factory_class, "MultiplexH264Encoder", "()Lorg/webrtc/VideoEncoderFactory;");
+      jobject ME_obj = env->CallStaticObjectMethod( pc_factory_class, ME);
+
+
+
+      jmethodID MD = webrtc::GetStaticMethodID(
+                env, pc_factory_class, "MultiplexH264Decoder", "()Lorg/webrtc/VideoDecoderFactory;");
+      jobject MD_obj = env->CallStaticObjectMethod( pc_factory_class, MD);
+
+
+
+      CHECK_EXCEPTION(env);
+          RTC_DCHECK(ME_obj != nullptr)
+              << "Cannot get VideoEncoderFactory.";
+
+
+       g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
+               g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
+            nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
+            webrtc::CreateBuiltinAudioDecoderFactory(),
+
+            std::unique_ptr<webrtc::VideoEncoderFactory>(
+                    new webrtc::MultiplexEncoderFactory(
+                            absl::WrapUnique(CreateVideoEncoderFactory(env,   ( const webrtc::JavaRef<jobject>&) ME_obj )), false ))
+
+                    ,
+
+            std::unique_ptr<webrtc::VideoDecoderFactory>(
+                    new webrtc::MultiplexDecoderFactory(
+                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) MD_obj)), false ))
+
+                    ,
+            nullptr, nullptr);
+        /*
+        g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
+                network_thread_.get(), g_worker_thread.get(), g_signaling_thread.get(),
+            nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
+            webrtc::CreateBuiltinAudioDecoderFactory(),
+            std::unique_ptr<webrtc::VideoEncoderFactory>(
+                new webrtc::MultiplexEncoderFactory(
+                    std::make_unique<webrtc::InternalEncoderFactory>())),
+            std::unique_ptr<webrtc::VideoDecoderFactory>(
+                new webrtc::MultiplexDecoderFactory(
+                    std::make_unique<webrtc::InternalDecoderFactory>())),
+            nullptr, nullptr);
+         */
   }
   if (!g_peer_connection_factory.get()) {
     DeletePeerConnection();
@@ -191,7 +330,7 @@ bool SimplePeerConnection::CreatePeerConnection(const char** turn_urls,
   stun_server.uri = GetPeerConnectionString();
   config_.servers.push_back(stun_server);
   config_.enable_rtp_data_channel = true;
-  config_.enable_dtls_srtp = false;
+  config_.enable_dtls_srtp = true;
 
   peer_connection_ = g_peer_connection_factory->CreatePeerConnection(
       config_, nullptr, nullptr, this);
@@ -350,30 +489,49 @@ bool SimplePeerConnection::SetRemoteDescription(const char* type,
   peer_connection_->SetRemoteDescription(
       DummySetSessionDescriptionObserver::Create(), session_description);
 
+  fSetReoteDesc = true;
+
+    for ( std::list< std::unique_ptr <webrtc::IceCandidateInterface> > ::iterator it = store_candidate.begin();
+                  it != store_candidate.end(); ++it) {
+
+        if (!peer_connection_->AddIceCandidate(it->get())) {
+            RTC_LOG(WARNING) << "Failed to apply the received candidate";
+         }
+    }
+
   return true;
 }
 
 bool SimplePeerConnection::AddIceCandidate(const char* candidate,
                                            const int sdp_mlineindex,
                                            const char* sdp_mid) {
-  if (!peer_connection_)
-    return false;
+    if (!peer_connection_)
+        return false;
 
-  webrtc::SdpParseError error;
-  std::unique_ptr<webrtc::IceCandidateInterface> ice_candidate(
-      webrtc::CreateIceCandidate(sdp_mid, sdp_mlineindex, candidate, &error));
-  if (!ice_candidate.get()) {
-    RTC_LOG(WARNING) << "Can't parse received candidate message. "
-                        "SdpParseError was: "
-                     << error.description;
-    return false;
-  }
-  if (!peer_connection_->AddIceCandidate(ice_candidate.get())) {
-    RTC_LOG(WARNING) << "Failed to apply the received candidate";
-    return false;
-  }
-  RTC_LOG(INFO) << " Received candidate :" << candidate;
-  return true;
+    webrtc::SdpParseError error;
+    std::unique_ptr<webrtc::IceCandidateInterface> ice_candidate(
+            webrtc::CreateIceCandidate(sdp_mid, sdp_mlineindex, candidate, &error));
+    if (!ice_candidate.get()) {
+        RTC_LOG(WARNING) << "Can't parse received candidate message. "
+                            "SdpParseError was: "
+                         << error.description;
+        return true;
+    }
+
+    // arvind
+    if(!fSetReoteDesc)
+    {
+        store_candidate.push_back(std::move(ice_candidate));
+        return true;
+    }
+
+
+    if (!peer_connection_->AddIceCandidate(ice_candidate.get())) {
+        RTC_LOG(WARNING) << "Failed to apply the received candidate";
+        return false;
+    }
+    RTC_LOG(INFO) << " Received candidate :" << candidate;
+      return true;
 }
 
 void SimplePeerConnection::SetAudioControl(bool is_mute, bool is_record) {

@@ -399,6 +399,8 @@ if (is_android) {
     sources = [
       "api/org/webrtc/HardwareVideoDecoderFactory.java",
       "api/org/webrtc/HardwareVideoEncoderFactory.java",
+      "api/org/webrtc/MultiplexVideoEncoderFactory.java",
+      "api/org/webrtc/MultiplexVideoDecoderFactory.java",
       "api/org/webrtc/PlatformSoftwareVideoDecoderFactory.java",
       "src/java/org/webrtc/AndroidVideoDecoder.java",
       "src/java/org/webrtc/BaseBitrateAdjuster.java",
