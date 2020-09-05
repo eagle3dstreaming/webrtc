@@ -59,6 +59,16 @@ class SimplePeerConnection : public webrtc::PeerConnectionObserver,
                        const int sdp_mlineindex,
                        const char* sdp_mid);
 
+  void I420_PushFrame(const uint8_t* data_y,
+                        const uint8_t* data_u,
+                        const uint8_t* data_v,
+                        const uint8_t* data_a,
+                        int stride_y,
+                        int stride_u,
+                        int stride_v,
+                        int stride_a,
+                        uint32_t width,
+                        uint32_t height);
  protected:
   // create a peerconneciton and add the turn servers info to the configuration.
   bool CreatePeerConnection(const char** turn_urls,
@@ -102,6 +112,7 @@ class SimplePeerConnection : public webrtc::PeerConnectionObserver,
 
   // Get remote audio tracks ssrcs.
   std::vector<uint32_t> GetRemoteAudioTrackSsrcs();
+
 
  private:
   rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection_;

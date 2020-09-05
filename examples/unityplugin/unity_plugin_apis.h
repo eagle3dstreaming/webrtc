@@ -80,6 +80,18 @@ WEBRTC_PLUGIN_API bool AddIceCandidate(const int peer_connection_id,
                                        const int sdp_mlineindex,
                                        const char* sdp_mid);
 
+
+WEBRTC_PLUGIN_API void I420_PushFrame(int peer_connection_id, const uint8_t* data_y,
+                                        const uint8_t* data_u,
+                                        const uint8_t* data_v,
+                                        const uint8_t* data_a,
+                                        int stride_y,
+                                        int stride_u,
+                                        int stride_v,
+                                        int stride_a,
+                                        uint32_t width,
+                                        uint32_t height);
+
 // Register callback functions.
 WEBRTC_PLUGIN_API bool RegisterOnLocalI420FrameReady(
     int peer_connection_id,

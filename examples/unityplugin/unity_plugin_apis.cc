@@ -194,3 +194,33 @@ bool RegisterOnIceCandiateReadytoSend(
       callback);
   return true;
 }
+
+
+void I420_PushFrame(int peer_connection_id, const uint8_t* data_y,
+                                                const uint8_t* data_u,
+                                                const uint8_t* data_v,
+                                                const uint8_t* data_a,
+                                                int stride_y,
+                                                int stride_u,
+                                                int stride_v,
+                                                int stride_a,
+                                                uint32_t width,
+                                                uint32_t height)
+{
+
+    if (!g_peer_connection_map.count(peer_connection_id))
+        return;
+
+    g_peer_connection_map[peer_connection_id]->I420_PushFrame(
+    data_y,
+    data_u,
+    data_v,
+    data_a,
+    stride_y,
+    stride_u,
+    stride_v,
+    stride_a,
+    width,
+    height);
+
+}
