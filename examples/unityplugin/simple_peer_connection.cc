@@ -12,6 +12,13 @@
 
 #include <utility>
 
+//arvind for test probe
+#include <thread>
+#include <atomic>
+#include <chrono>
+
+//arvind for test probe
+
 
 #include "absl/memory/memory.h"
 #include "api/audio_codecs/builtin_audio_decoder_factory.h"
@@ -57,59 +64,235 @@ static  std::list< std::unique_ptr <webrtc::IceCandidateInterface> > store_candi
 
 
 
+////////////////////////////////////////////////////////////////////////////////////////////
+
+#include <algorithm>
+#include <third_party/libyuv/include/libyuv.h>
+
+#include "api/scoped_refptr.h"
+#include "api/video/i420_buffer.h"
+#include "api/video/video_frame_buffer.h"
+#include "api/video/video_rotation.h"
+
+
+    class TestVideoCapturer : public rtc::VideoSourceInterface<webrtc::VideoFrame> {
+    public:
+        class FramePreprocessor {
+        public:
+            virtual ~FramePreprocessor() = default;
+
+            virtual webrtc::VideoFrame Preprocess(const webrtc::VideoFrame& frame) = 0;
+        };
+
+
+            ~TestVideoCapturer() = default;
+
+            void OnFrame(const webrtc::VideoFrame& original_frame) {
+                int cropped_width = 0;
+                int cropped_height = 0;
+                int out_width = 0;
+                int out_height = 0;
+
+                broadcaster_.OnFrame(original_frame);
+                return ;
+
+                webrtc::VideoFrame frame = MaybePreprocess(original_frame);
+
+                if (!video_adapter_.AdaptFrameResolution(
+                        frame.width(), frame.height(), frame.timestamp_us() * 1000,
+                        &cropped_width, &cropped_height, &out_width, &out_height)) {
+                    // Drop frame in order to respect frame rate constraint.
+                    return;
+                }
+
+                if (out_height != frame.height() || out_width != frame.width()) {
+                    // Video adapter has requested a down-scale. Allocate a new buffer and
+                    // return scaled version.
+                    // For simplicity, only scale here without cropping.
+                    rtc::scoped_refptr<webrtc::I420Buffer> scaled_buffer =
+                            webrtc::I420Buffer::Create(out_width, out_height);
+                    scaled_buffer->ScaleFrom(*frame.video_frame_buffer()->ToI420());
+
+                    webrtc::VideoFrame::Builder new_frame_builder =
+                            webrtc::VideoFrame::Builder()
+                                    .set_video_frame_buffer(scaled_buffer)
+                                    .set_rotation(webrtc::kVideoRotation_0)
+                                    .set_timestamp_us(frame.timestamp_us())
+                                    .set_id(frame.id());
+                    if (frame.has_update_rect()) {
+                        webrtc::VideoFrame::UpdateRect new_rect = frame.update_rect().ScaleWithFrame(
+                                frame.width(), frame.height(), 0, 0, frame.width(), frame.height(),
+                                out_width, out_height);
+                        new_frame_builder.set_update_rect(new_rect);
+                    }
+                    broadcaster_.OnFrame(new_frame_builder.build());
+
+                } else {
+                    // No adaptations needed, just return the frame as is.
+                    broadcaster_.OnFrame(frame);
+                }
+            }
+
+            rtc::VideoSinkWants GetSinkWants() {
+                return broadcaster_.wants();
+            }
+
+            void AddOrUpdateSink(
+                    rtc::VideoSinkInterface<webrtc::VideoFrame>* sink,
+                    const rtc::VideoSinkWants& wants) {
+                broadcaster_.AddOrUpdateSink(sink, wants);
+                UpdateVideoAdapter();
+            }
+
+            void RemoveSink(rtc::VideoSinkInterface<webrtc::VideoFrame>* sink) {
+                broadcaster_.RemoveSink(sink);
+                UpdateVideoAdapter();
+            }
+
+            void UpdateVideoAdapter() {
+                video_adapter_.OnSinkWants(broadcaster_.wants());
+            }
+
+            webrtc::VideoFrame MaybePreprocess(const webrtc::VideoFrame& frame) {
+                rtc::CritScope crit(&lock_);
+                if (preprocessor_ != nullptr) {
+                    return preprocessor_->Preprocess(frame);
+                } else {
+                    return frame;
+                }
+            }
+
+        rtc::CriticalSection lock_;
+        std::unique_ptr<FramePreprocessor> preprocessor_ RTC_GUARDED_BY(lock_);
+        rtc::VideoBroadcaster broadcaster_;
+        cricket::VideoAdapter video_adapter_;
+    };  // namespace webrtc
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
 static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
     g_peer_connection_factory;
-#if defined(WEBRTC_ANDROID)
+#if defined(WEBRTC_ANDROID1)
 // Android case: the video track does not own the capturer, and it
 // relies on the app to dispose the capturer when the peerconnection
 // shuts down.
 static jobject g_camera = nullptr;
 #else
 
-    class TestVcmCapturer : public webrtc::test::TestVideoCapturer,
+    std::atomic<bool> running(true);
+
+    class TestVcmCapturer : public TestVideoCapturer,
                         public rtc::VideoSinkInterface<webrtc::VideoFrame> {
     public:
-        static TestVcmCapturer *Create(size_t width,
-                                       size_t height,
-                                       size_t target_fps,
-                                       size_t capture_device_index) {
-            int x = 0;
 
-        }
+        TestVcmCapturer() :  renderThread(nullptr){}
 
-        virtual ~TestVcmCapturer();
-
-        virtual const webrtc::VideoFrame Preprocess(const const webrtc::VideoFrame &frame)
-        {
-            int x = 0;
-
-        }
-
-        void OnFrame(const webrtc::VideoFrame& frame) {
-
-            int x = 0;
-
-        }
-
-    private:
-        TestVcmCapturer();
         bool Init(size_t width,
-                  size_t height,
-                  size_t target_fps,
-                  size_t capture_device_index)
-        {
-            int x = 0;
+                               size_t height,
+                               size_t target_fps,
+                               size_t capture_device_index) {
+            //std::unique_ptr<VideoCaptureModule::DeviceInfo> device_info(
+              //      VideoCaptureFactory::CreateDeviceInfo());
+           // renderThread = new std::thread(&TestVcmCapturer::updateFunc, this);
+            return true;
         }
+
+        static TestVcmCapturer* Create(size_t width,
+                                         size_t height,
+                                         size_t target_fps,
+                                         size_t capture_device_index) {
+            std::unique_ptr<TestVcmCapturer> vcm_capturer(new TestVcmCapturer());
+            if (!vcm_capturer->Init(width, height, target_fps, capture_device_index)) {
+                RTC_LOG(LS_WARNING) << "Failed to create VcmCapturer(w = " << width
+                                    << ", h = " << height << ", fps = " << target_fps
+                                    << ")";
+                return nullptr;
+            }
+            return vcm_capturer.release();
+        }
+
         void Destroy() {
-            int x = 0;
+           // if (!vcm_)
+             //   return;
+
+           // vcm_->StopCapture();
+            //vcm_->DeRegisterCaptureDataCallback();
+            // Release reference to VCM.
+           // vcm_ = nullptr;
+        }
+
+        void FillFrameBuffer(rtc::scoped_refptr<webrtc::I420Buffer> frame) {
+            libyuv::I420Rect(frame->MutableDataY(), frame->StrideY(),
+                                   frame->MutableDataU(), frame->StrideU(),
+                                   frame->MutableDataV(), frame->StrideV(), 0, 0,
+                                   frame->width(), frame->height(), 12,
+                                   23, 34);
+        }
+        void static updateFunc(rtc::VideoSinkInterface<webrtc::VideoFrame>* dataCallback)
+        {
+            uint16_t myid= 0;
+
+            while(running)
+            {
+                //std::lock_guard<std::mutex> locker(mutex);
+
+                rtc::scoped_refptr<webrtc::I420Buffer> scaled_buffer =
+                        webrtc::I420Buffer::Create(640, 480);
+
+
+                libyuv::I420Rect(scaled_buffer->MutableDataY(), scaled_buffer->StrideY(),
+                                 scaled_buffer->MutableDataU(), scaled_buffer->StrideU(),
+                                 scaled_buffer->MutableDataV(), scaled_buffer->StrideV(), 0, 0,
+                                 scaled_buffer->width(), scaled_buffer->height(), 12,
+                                 640, 480);
+
+
+               // FillFrameBuffer(scaled_buffer);
+
+               // scaled_buffer->ScaleFrom(*frame.video_frame_buffer()->ToI420());
+
+                webrtc::VideoFrame::Builder new_frame_builder =
+                        webrtc::VideoFrame::Builder()
+                                .set_video_frame_buffer(scaled_buffer)
+                                .set_rotation(webrtc::kVideoRotation_0)
+                                .set_timestamp_us(rtc::TimeMicros())
+                                .set_id(++myid);
+
+
+                dataCallback->OnFrame(  new_frame_builder.build());
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            }
+        }
+
+        virtual ~TestVcmCapturer() {
+            running=false;
+            if(renderThread) {
+                renderThread->join();
+                delete renderThread;
+            }
+            Destroy();
+        }
+
+        void OnFrame(const webrtc::VideoFrame& frame)
+        {
+            TestVideoCapturer::OnFrame(frame);
         }
 
 
-        rtc::scoped_refptr<webrtc::VideoCaptureModule> vcm_;
+     //   rtc::scoped_refptr<webrtc::VideoCaptureModule> vcm_;
+
+       // static
+        //std::mutex    mutex;
+        std::thread   *renderThread;
+
+
         webrtc::VideoCaptureCapability capability_;
     };
 
-class CapturerTrackSource : public webrtc::VideoTrackSource {
+   // std::atomic<bool> TestVcmCapturer::running=true;
+
+class CapturerTrackSource : public webrtc::VideoTrackSource, public rtc::VideoSinkInterface<webrtc::VideoFrame>  {
  public:
   static rtc::scoped_refptr<CapturerTrackSource> Create() {
     const size_t kWidth = 640;
@@ -124,6 +307,10 @@ class CapturerTrackSource : public webrtc::VideoTrackSource {
     return new rtc::RefCountedObject<CapturerTrackSource>(std::move(capturer));
   }
 
+    virtual void OnFrame(const webrtc::VideoFrame& frame) override
+    {
+        capturer_->OnFrame( frame  );
+    }
  protected:
   explicit CapturerTrackSource(
       std::unique_ptr<TestVcmCapturer> capturer)
@@ -138,31 +325,19 @@ class CapturerTrackSource : public webrtc::VideoTrackSource {
 
 #endif
 
+static  rtc::scoped_refptr<CapturerTrackSource> video_device;
+
 ////////////////////////////////////////////////////
-/*#include "sdk/android/src/jni/pc/video.h"
-
-#include <jni.h>
-#include <memory>
-
-#include "api/video_codecs/video_decoder_factory.h"
-#include "api/video_codecs/video_encoder_factory.h"
-#include "rtc_base/logging.h"
-#include "sdk/android/native_api/jni/java_types.h"
-#include "base/android/scoped_java_ref.h"
-#include "sdk/android/src/jni/video_decoder_factory_wrapper.h"
-#include "sdk/android/src/jni/video_encoder_factory_wrapper.h"
 
 
-*/
+webrtc::VideoDecoderFactory* CreateVideoDecoderFactory( JNIEnv* jni,  const  webrtc::JavaRef<jobject>& j_decoder_factory) {
+    return   new  webrtc::jni::VideoDecoderFactoryWrapper(jni, j_decoder_factory);
+}
 
-    webrtc::VideoDecoderFactory* CreateVideoDecoderFactory( JNIEnv* jni,  const  webrtc::JavaRef<jobject>& j_decoder_factory) {
-           return   new  webrtc::jni::VideoDecoderFactoryWrapper(jni, j_decoder_factory);
-    }
-
-    webrtc::VideoEncoderFactory* CreateVideoEncoderFactory(  JNIEnv* jni, const webrtc::JavaRef<jobject>& j_encoder_factory)
-    {
-      return  new  webrtc::jni::VideoEncoderFactoryWrapper(jni, j_encoder_factory);
-    }
+webrtc::VideoEncoderFactory* CreateVideoEncoderFactory(  JNIEnv* jni, const webrtc::JavaRef<jobject>& j_encoder_factory)
+{
+    return  new  webrtc::jni::VideoEncoderFactoryWrapper(jni, j_encoder_factory);
+}
 
 
 
@@ -341,7 +516,7 @@ bool SimplePeerConnection::CreatePeerConnection(const char** turn_urls,
 void SimplePeerConnection::DeletePeerConnection() {
   g_peer_count--;
 
-#if defined(WEBRTC_ANDROID)
+#if defined(WEBRTC_ANDROID1)
   if (g_camera) {
     JNIEnv* env = webrtc::jni::GetEnv();
     jclass pc_factory_class =
@@ -505,6 +680,7 @@ bool SimplePeerConnection::SetRemoteDescription(const char* type,
 bool SimplePeerConnection::AddIceCandidate(const char* candidate,
                                            const int sdp_mlineindex,
                                            const char* sdp_mid) {
+    //arvind
     if (!peer_connection_)
         return false;
 
@@ -589,7 +765,7 @@ void SimplePeerConnection::AddStreams(bool audio_only) {
   stream->AddTrack(audio_track);
 
   if (!audio_only) {
-#if defined(WEBRTC_ANDROID)
+#if defined(WEBRTC_ANDROID1)
     JNIEnv* env = webrtc::jni::GetEnv();
     jclass pc_factory_class =
         unity_plugin::FindClass(env, "org/webrtc/UnityUtility");
@@ -622,13 +798,42 @@ void SimplePeerConnection::AddStreams(bool audio_only) {
                                                     source.release()));
     stream->AddTrack(video_track);
 #else
-    rtc::scoped_refptr<CapturerTrackSource> video_device =
-        CapturerTrackSource::Create();
+    //rtc::scoped_refptr<CapturerTrackSource> video_device =
+    //    CapturerTrackSource::Create();
+
+    video_device = CapturerTrackSource::Create();
+
     if (video_device) {
       rtc::scoped_refptr<webrtc::VideoTrackInterface> video_track(
           g_peer_connection_factory->CreateVideoTrack(kVideoLabel,
                                                       video_device));
+        ///////webrtc::VideoFrame fm();
+       /* rtc::scoped_refptr<webrtc::I420Buffer> scaled_buffer =
+                webrtc::I420Buffer::Create(640, 480);
 
+        libyuv::I420Rect(scaled_buffer->MutableDataY(), scaled_buffer->StrideY(),
+                         scaled_buffer->MutableDataU(), scaled_buffer->StrideU(),
+                         scaled_buffer->MutableDataV(), scaled_buffer->StrideV(), 0, 0,
+                         scaled_buffer->width(), scaled_buffer->height(), 12,
+                         640, 480);
+
+
+        // FillFrameBuffer(scaled_buffer);
+
+        // scaled_buffer->ScaleFrom(*frame.video_frame_buffer()->ToI420());
+
+        webrtc::VideoFrame::Builder new_frame_builder =
+                webrtc::VideoFrame::Builder()
+                        .set_video_frame_buffer(scaled_buffer)
+                        .set_rotation(webrtc::kVideoRotation_0)
+                        .set_timestamp_us(rtc::TimeMicros())
+                        .set_id(3);
+
+
+        //dataCallback->OnFrame(  new_frame_builder.build());
+        // TestVideoCapturer::OnFrame(new_frame_builder.build());
+      video_device->OnFrame(new_frame_builder.build() );
+*/
       stream->AddTrack(video_track);
     }
 #endif
@@ -741,4 +946,136 @@ std::vector<uint32_t> SimplePeerConnection::GetRemoteAudioTrackSsrcs() {
   }
 
   return ssrcs;
+}
+
+
+void SimplePeerConnection::I420_PushFrame(const uint8_t* data_y,
+                    const uint8_t* data_u,
+                    const uint8_t* data_v,
+                    const uint8_t* data_a,
+                    int stride_y,
+                    int stride_u,
+                    int stride_v,
+                    int stride_a,
+                    uint32_t width,
+                    uint32_t height)
+{
+
+    static uint16_t myid= 0;
+/*
+    rtc::scoped_refptr<webrtc::I420Buffer> scaled_buffer =
+            webrtc::I420Buffer::Create(640, 480);
+
+    libyuv::I420Rect(scaled_buffer->MutableDataY(), scaled_buffer->StrideY(),
+                     scaled_buffer->MutableDataU(), scaled_buffer->StrideU(),
+                     scaled_buffer->MutableDataV(), scaled_buffer->StrideV(), 0, 0,
+                     scaled_buffer->width(), scaled_buffer->height(), 12,
+                     640, 480);
+
+
+    // FillFrameBuffer(scaled_buffer);
+
+    // scaled_buffer->ScaleFrom(*frame.video_frame_buffer()->ToI420());
+
+    webrtc::VideoFrame::Builder new_frame_builder =
+            webrtc::VideoFrame::Builder()
+                    .set_video_frame_buffer(scaled_buffer)
+                    .set_rotation(webrtc::kVideoRotation_0)
+                    .set_timestamp_us(rtc::TimeMicros())
+                    .set_id(++myid);
+
+
+    //dataCallback->OnFrame(  new_frame_builder.build());
+    video_device->OnFrame(new_frame_builder.build() );
+    */
+    rtc::scoped_refptr<webrtc::I420Buffer> scaled_buffer =
+            webrtc::I420Buffer::Create(width, height, stride_y, stride_u, stride_v);
+
+
+    // Arvind infuture use ConvertToI420
+    //scaled_buffer->Copy( width, height, data_y, stride_y, data_u,
+     //                    stride_u, data_v, stride_v);
+
+     int ret = libyuv::I420Copy(data_y, stride_y, data_u, stride_u, data_v,
+                                     stride_v, scaled_buffer->MutableDataY(),
+                                 scaled_buffer->StrideY(), scaled_buffer->MutableDataU(),
+                                 scaled_buffer->StrideU(), scaled_buffer->MutableDataV(),
+                                 scaled_buffer->StrideV(), width, height);
+
+    if (ret < 0) {
+        RTC_LOG(LS_ERROR) << "RGBAToI420 error";
+
+        return;  // Out of memory runtime error.
+    }
+
+    webrtc::VideoFrame::Builder new_frame_builder =
+            webrtc::VideoFrame::Builder()
+                    .set_video_frame_buffer(scaled_buffer)
+                    .set_rotation(webrtc::kVideoRotation_0)
+                    .set_timestamp_us(rtc::TimeMicros())
+                    .set_id(++myid);
+
+
+    //dataCallback->OnFrame(  new_frame_builder.build());
+    video_device->OnFrame(new_frame_builder.build() );
+}
+
+void SimplePeerConnection::I420_PushFrameRGBA( const uint8_t*  rgbBuf, int bufLen, const uint8_t*  augBuf,
+                                               int augLen, uint32_t width, uint32_t height) {
+
+//    libyuv::RGBAToI420(scaled_buffer->MutableDataY(), scaled_buffer->StrideY(),
+//                     scaled_buffer->MutableDataU(), scaled_buffer->StrideU(),
+//                     scaled_buffer->MutableDataV(), scaled_buffer->StrideV(), 0, 0,
+//                     scaled_buffer->width(), scaled_buffer->height(), 12,
+//                     640, 480);
+
+    static uint16_t myid = 0;
+
+    int y_size = width * height;
+    int uv_size = ((width + 1) / 2) * ((height + 1) / 2);
+    uint8_t *rotate_buffer = (uint8_t *) malloc(y_size + uv_size * 2); /* NOLINT */
+    if (!rotate_buffer) {
+        RTC_LOG(LS_ERROR) << "Out of memory runtime error";
+        return;  // Out of memory runtime error.
+    }
+    uint8_t *dst_y = rotate_buffer;
+    uint8_t *dst_u = dst_y + y_size;
+    uint8_t *dst_v = dst_u + uv_size;
+    int dst_stride_y = width;
+    int dst_stride_u = ((width + 1) / 2);
+    int dst_stride_v = dst_stride_u;
+
+
+    int r = libyuv::RGBAToI420(rgbBuf, width * 4, dst_y, dst_stride_y, dst_u,
+                               dst_stride_u, dst_v, dst_stride_v, width,
+                               height);
+
+    if (r < 0) {
+        RTC_LOG(LS_ERROR) << "RGBAToI420 error";
+        free(rotate_buffer);
+        return;  // Out of memory runtime error.
+    }
+
+    rtc::scoped_refptr<webrtc::I420Buffer> scaled_buffer =
+            webrtc::I420Buffer::Create(width, height);
+
+
+   // Arvind infuture use ConvertToI420
+    scaled_buffer->Copy( width, height, dst_y, dst_stride_y, dst_u,
+                        dst_stride_u, dst_v,dst_stride_v);
+
+
+    webrtc::VideoFrame::Builder new_frame_builder =
+            webrtc::VideoFrame::Builder()
+                    .set_video_frame_buffer(scaled_buffer)
+                    .set_rotation(webrtc::kVideoRotation_0)
+                    .set_timestamp_us(rtc::TimeMicros())
+                    .set_id(++myid);
+
+
+    //dataCallback->OnFrame(  new_frame_builder.build());
+    video_device->OnFrame(new_frame_builder.build() );
+
+    free(rotate_buffer);
+
 }

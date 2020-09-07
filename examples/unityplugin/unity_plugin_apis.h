@@ -92,6 +92,10 @@ WEBRTC_PLUGIN_API void I420_PushFrame(int peer_connection_id, const uint8_t* dat
                                         uint32_t width,
                                         uint32_t height);
 
+WEBRTC_PLUGIN_API void I420_PushFrameRGBA( int peer_connection_id, const uint8_t* rgbBuf, int bufLen, const uint8_t*  augBuf,
+                         int augLen, uint32_t width, uint32_t height);
+
+
 // Register callback functions.
 WEBRTC_PLUGIN_API bool RegisterOnLocalI420FrameReady(
     int peer_connection_id,

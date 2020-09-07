@@ -69,6 +69,9 @@ class SimplePeerConnection : public webrtc::PeerConnectionObserver,
                         int stride_a,
                         uint32_t width,
                         uint32_t height);
+
+  void I420_PushFrameRGBA( const uint8_t*  rgbBuf, int bufLen, const uint8_t*  augBuf,
+                                                   int augLen, uint32_t width, uint32_t height);
  protected:
   // create a peerconneciton and add the turn servers info to the configuration.
   bool CreatePeerConnection(const char** turn_urls,

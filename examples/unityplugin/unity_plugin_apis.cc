@@ -224,3 +224,14 @@ void I420_PushFrame(int peer_connection_id, const uint8_t* data_y,
     height);
 
 }
+
+void I420_PushFrameRGBA( int peer_connection_id, const uint8_t*  rgbBuf, int bufLen, const uint8_t*  augBuf,
+                                           int augLen, uint32_t width, uint32_t height)
+{
+
+  if (!g_peer_connection_map.count(peer_connection_id))
+    return;
+
+  g_peer_connection_map[peer_connection_id]->I420_PushFrameRGBA(   rgbBuf,   bufLen,   augBuf,   augLen,   width,   height);
+
+}
