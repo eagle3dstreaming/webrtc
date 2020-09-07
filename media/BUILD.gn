@@ -264,6 +264,8 @@ rtc_library("rtc_internal_video_codecs") {
     "engine/internal_encoder_factory.h",
     "engine/multiplex_codec_factory.cc",
     "engine/multiplex_codec_factory.h",
+    "engine/multiplex_augment_only_codec_factory.cc",
+    "engine/multiplex_augment_only_codec_factory.h",
 
     # TODO(bugs.webrtc.org/7925): stop exporting this header once downstream
     # targets depend on :rtc_encoder_simulcast_proxy directly.
