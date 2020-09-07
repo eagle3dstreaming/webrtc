@@ -27,6 +27,8 @@
 #include "media/engine/internal_decoder_factory.h"
 #include "media/engine/internal_encoder_factory.h"
 #include "media/engine/multiplex_codec_factory.h"
+#include "media/engine/multiplex_augment_only_codec_factory.h"
+#include <modules/video_coding/codecs/multiplex/include/augmented_video_frame_buffer.h>
 #include "modules/audio_device/include/audio_device.h"
 #include "modules/audio_processing/include/audio_processing.h"
 #include "modules/video_capture/video_capture_factory.h"
@@ -421,6 +423,7 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
           RTC_DCHECK(ME_obj != nullptr)
               << "Cannot get VideoEncoderFactory.";
 
+       // Arind other codex also works Replace MultiplexAugmentOnlyEncoderFactory with    MultiplexEncoderFactory  , MultiplexAugmentOnlyDecoderFactory  MultiplexDecoderFactory
 
        g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
                g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
@@ -428,15 +431,12 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
             webrtc::CreateBuiltinAudioDecoderFactory(),
 
             std::unique_ptr<webrtc::VideoEncoderFactory>(
-                    new webrtc::MultiplexEncoderFactory(
-                            absl::WrapUnique(CreateVideoEncoderFactory(env,   ( const webrtc::JavaRef<jobject>&) ME_obj )), false ))
-
+                    new webrtc::MultiplexAugmentOnlyEncoderFactory(
+                            absl::WrapUnique(CreateVideoEncoderFactory(env,   ( const webrtc::JavaRef<jobject>&) ME_obj )), true ))
                     ,
-
             std::unique_ptr<webrtc::VideoDecoderFactory>(
-                    new webrtc::MultiplexDecoderFactory(
-                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) MD_obj)), false ))
-
+                    new webrtc::MultiplexAugmentOnlyDecoderFactory(
+                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) MD_obj)), true ))
                     ,
             nullptr, nullptr);
         /*
@@ -1007,6 +1007,16 @@ void SimplePeerConnection::I420_PushFrame(const uint8_t* data_y,
 
         return;  // Out of memory runtime error.
     }
+
+    rtc::scoped_refptr<webrtc::VideoFrameBuffer> vdfbuffer(scaled_buffer );
+    std::unique_ptr<uint8_t[]> augmenting_data;
+
+    memcpy(augmenting_data.get(),  data_a,  stride_a);
+
+    rtc::scoped_refptr<webrtc::AugmentedVideoFrameBuffer> augmented_buffer =
+            new rtc::RefCountedObject<webrtc::AugmentedVideoFrameBuffer>(vdfbuffer,
+                                                                         std::move(augmenting_data),
+                                                                         stride_a);
 
     webrtc::VideoFrame::Builder new_frame_builder =
             webrtc::VideoFrame::Builder()
