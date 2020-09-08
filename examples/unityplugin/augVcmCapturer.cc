@@ -6,12 +6,8 @@
 
 
 void AugVideoCapturer::OnFrame(const webrtc::VideoFrame& original_frame) {
-    int cropped_width = 0;
-    int cropped_height = 0;
-    int out_width = 0;
-    int out_height = 0;
 
-    broadcaster_.OnFrame(original_frame);
+     broadcaster_.OnFrame(original_frame);
     return;
 }
 
