@@ -55,7 +55,7 @@ group("examples") {
     }
   }
 
-  if (is_android || is_win) {
+  if (is_android || is_win || is_linux) {
     deps += [ ":webrtc_unity_plugin" ]
   }
 }
@@ -768,7 +768,7 @@ if (is_linux || is_win) {
   }
 }
 
-if (is_win || is_android) {
+if (is_win || is_android || is_linux) {
   rtc_shared_library("webrtc_unity_plugin") {
     testonly = true
     sources = [
