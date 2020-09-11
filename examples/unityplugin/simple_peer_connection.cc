@@ -10,7 +10,9 @@
 
 #include "examples/unityplugin/simple_peer_connection.h"
 #include "examples/unityplugin/augVcmCapturer.h"
+#include "examples/unityplugin/h264CodecFactory.h"
 
+#include "modules/video_coding/codecs/h264/include/h264.h"
 
 #include "absl/memory/memory.h"
 #include "api/audio_codecs/builtin_audio_decoder_factory.h"
@@ -23,8 +25,6 @@
 
 #include "modules/audio_device/include/audio_device.h"
 #include "modules/audio_processing/include/audio_processing.h"
-
-
 
 #if defined(WEBRTC_ANDROID)
 #include "examples/unityplugin/class_reference_holder.h"
@@ -190,16 +190,24 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
             nullptr, nullptr);
 #else //for ios
 
+      std::unique_ptr<webrtc::VideoEncoderFactory> encoder_factory =
+              std::make_unique<webrtc::h264::H264VideoEncoderFactory>(
+                      []() { return webrtc::H264Encoder::Create(cricket::VideoCodec("H264")); });
+
+      std::unique_ptr<webrtc::VideoDecoderFactory> decoder_factory =
+              std::make_unique<webrtc::h264::H264VideoDecoderFactory>(
+                      []() { return webrtc::H264Decoder::Create(); });
+
         g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
                 g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
             nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
             webrtc::CreateBuiltinAudioDecoderFactory(),
             std::unique_ptr<webrtc::VideoEncoderFactory>(
                 new webrtc::MultiplexAugmentOnlyEncoderFactory(
-                    std::make_unique<webrtc::InternalEncoderFactory>())),
+                        std::move(encoder_factory), true)),
             std::unique_ptr<webrtc::VideoDecoderFactory>(
                 new webrtc::MultiplexAugmentOnlyDecoderFactory(
-                    std::make_unique<webrtc::InternalDecoderFactory>())),
+                        std::move(decoder_factory), true)),
             nullptr, nullptr);
 #endif
   }

@@ -6,9 +6,9 @@
 #define ANDROID_AR_DEMO_SOCKETIO_AUGVCMCAPTURER_H
 
 #include <utility>
-#include <thread>
-#include <atomic>
-#include <chrono>
+//#include <thread>
+//#include <atomic>
+//#include <chrono>
 
 #include "pc/video_track_source.h"
 #include "modules/video_capture/video_capture_factory.h"

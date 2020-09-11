@@ -776,6 +776,7 @@ if (is_win || is_android || is_linux) {
       "unityplugin/simple_peer_connection.h",
       "unityplugin/augVcmCapturer.cc",
       "unityplugin/augVcmCapturer.h",
+      "unityplugin/h264CodecFactory.h",
       "unityplugin/unity_plugin_apis.cc",
       "unityplugin/unity_plugin_apis.h",
       "unityplugin/video_observer.cc",
