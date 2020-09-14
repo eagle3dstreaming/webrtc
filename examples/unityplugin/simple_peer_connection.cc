@@ -192,7 +192,14 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
 
       std::unique_ptr<webrtc::VideoEncoderFactory> encoder_factory =
               std::make_unique<webrtc::h264::H264VideoEncoderFactory>(
-                      []() { return webrtc::H264Encoder::Create(cricket::VideoCodec("H264")); });
+                      []() {
+                                cricket::VideoCodec codec("H264");
+                                codec.SetParam("profile-level-id", "42e01f");
+                                codec.SetParam("level-asymmetry-allowed", "1");
+                                codec.SetParam("packetization-mode", "1");
+                                return webrtc::H264Encoder::Create(codec);
+                               } );
+
 
       std::unique_ptr<webrtc::VideoDecoderFactory> decoder_factory =
               std::make_unique<webrtc::h264::H264VideoDecoderFactory>(
