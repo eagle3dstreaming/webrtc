@@ -15,34 +15,42 @@ fi
 BASE_PATH=`pwd`
 export PATH=$PATH:${BASE_PATH}/depot_tools
 
-# fix for problem of `tar` command on some docker platform "Cannot change ownership"
-# happens on sysroot installation `src/build/linux/sysroot_scripts/install-sysroot.py` while `gclient sync`
-TAR_PROXY_DIR="${BASE_PATH}/tar-bin"
-if [ ! -d ${TAR_PROXY_DIR} ]; then
-  mkdir ${TAR_PROXY_DIR}
-fi
-echo '#!/bin/sh -x' > ${TAR_PROXY_DIR}/tar
-echo '/bin/tar $1 $2 $3 $4 $5 $6 $7 $8 $9 --no-same-owner' >> ${TAR_PROXY_DIR}/tar
-chmod 755 ${TAR_PROXY_DIR}/tar
-export PATH=${TAR_PROXY_DIR}:$PATH
+mkdir webrtc_android/
 
-# fetch BIG source code
-mkdir webrtc
-cd webrtc
-fetch --nohooks webrtc
+cd webrtc_android
 
-# ..... wait .....
+fetch --nohooks webrtc_android. 
 
-# get source code of specific commit
-cd src
-git checkout 2770c3df91861693ecb2ae805db84c7edbb1fc1a # applied unity plugin fix
-cd ..
+cd src git checkout branch-heads/m75 Then type gclient sync
 
-# prepare dependent libraries
-export CHROME_HEADLESS=1 # a magic to skip interactive license agreement
-echo "target_os = [ 'android' ]" >> .gclient
 gclient sync
-unset CHROME_HEADLESS
 
+git remote add arvind https://github.com/scopear/webrtc.git
 
+git remote update
 
+git checkout Multiplex_UnityPlugin
+
+# then run generateUnityPlugin.sh
+#  for windows we do not have batch file it is manual
+# if you haven’t installed a copy of git, open https://git-for-windows.github.io/, download and install, suggest to select “Use Git from Windows Command Prompt” during installation.
+
+# Fetch depot_tools:
+# follow http://dev.chromium.org/developers/how-tos/install-depot-tools, use 7z to extract to E:\webrtc\depot_tools
+
+# Run depot_tools:
+# http://www.chromium.org/developers/how-tos/build-instructions-windows
+
+# mkdir webrtc-checkout cd webrtc-checkout fetch --nohooks webrtc
+
+# do not forget to set for using visual studio for builing code
+#  set DEPOT_TOOLS_WIN_TOOLCHAIN=0
+
+#  cd src git branch -r 
+# git checkout branch-heads/m76
+
+#git remote add arvind https://github.com/scopear/webrtc.git
+
+#git remote update
+
+#git checkout Multiplex_UnityPlugin
