@@ -8,6 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include <modules/video_coding/codecs/multiplex/include/augmented_video_frame_buffer.h>
 #include "examples/unityplugin/video_observer.h"
 
 void VideoObserver::SetVideoCallback(I420FRAMEREADY_CALLBACK callback) {
@@ -22,8 +23,20 @@ void VideoObserver::OnFrame(const webrtc::VideoFrame& frame) {
 
   rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer(
       frame.video_frame_buffer());
+  if(buffer->type() == webrtc::VideoFrameBuffer::Type::kAugmented ) {
 
-  if (buffer->type() != webrtc::VideoFrameBuffer::Type::kI420A) {
+    uint8_t* augData = ((webrtc::AugmentedVideoFrameBuffer*)buffer.get())->GetAugmentingData();
+    uint16_t augSize =  ((webrtc::AugmentedVideoFrameBuffer*)buffer.get())->GetAugmentingDataSize() ;
+
+    rtc::scoped_refptr<webrtc::I420BufferInterface> i420_buffer =
+            buffer->ToI420();
+    OnI420FrameReady(i420_buffer->DataY(), i420_buffer->DataU(),
+                     i420_buffer->DataV(), augData, i420_buffer->StrideY(),
+                     i420_buffer->StrideU(), i420_buffer->StrideV(), augSize,
+                     frame.width(), frame.height());
+
+  }
+  else if (buffer->type() != webrtc::VideoFrameBuffer::Type::kI420A) {
     rtc::scoped_refptr<webrtc::I420BufferInterface> i420_buffer =
         buffer->ToI420();
     OnI420FrameReady(i420_buffer->DataY(), i420_buffer->DataU(),
