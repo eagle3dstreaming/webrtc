@@ -22,6 +22,8 @@ group("examples") {
   testonly = true
   deps = []
 
+  deps += [ "//socketio" ]
+
   if (is_android) {
     deps += [
       ":AppRTCMobile",

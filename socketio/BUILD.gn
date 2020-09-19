@@ -1,0 +1,334 @@
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+import("//build_overrides/build.gni")
+import("//build/config/arm.gni")
+#import("//testing/libfuzzer/fuzzer_test.gni")
+
+config("socketio_config") {
+  include_dirs = [ 
+
+  "client/src/base/include", 
+  "client/src/http_parser",
+  "client/src/crypto/include",
+  "client/src/json/include",
+  "client/src/net/include",
+   "client/src/http/include",
+   "client/src/libuv/include",
+   "client/src/libuv/src",
+   "client/src/libuv/src/unix",
+   "client/src/signal/include",
+
+  ]
+
+  #defines = [ "OPUS_FIXED_POINT" ]
+  
+  # cflags = [ "-fexceptions", "-Wno-error" ]
+  cflags_cc = [ "-fexceptions", "-Wno-error" , "-Wno-inconsistent-missing-override",
+    "-Wno-overloaded-virtual"]
+}
+
+config("socketio_private_config") {
+  defines = [
+    "OPUS_BUILD",
+    "OPUS_EXPORT=",
+
+    # Prefer alloca() over variable length arrays which are often inefficient;
+    # the opus code will automatically handle this correctly per-platform.
+    #"USE_ALLOCA",
+    #"HAVE_ALLOCA_H",
+  ]
+
+
+  cflags = []
+
+  if (is_win) {
+    defines += [ "inline=__inline" ]
+
+  cflags += [ "-fexceptions" ]
+  cflags_cc += [ "-fexceptions"]
+
+  } else {
+    defines += [
+   #    "HAVE_LRINT",
+    #   "HAVE_LRINTF",
+    ]
+  }
+
+
+
+
+  # Note: Do not add any defines or include_dirs to this target, those should all
+  # go in the opus_private_config so they can be shared with intrinsic targets.
+  static_library("socketio") {
+ 
+    include_dirs = [ 
+
+    "client/src/base/include", 
+    "client/src/http_parser",
+    "client/src/crypto/include",
+    "client/src/json/include",
+    "client/src/net/include",
+     "client/src/http/include",
+     "client/src/libuv/include",
+     "client/src/libuv/src",
+     "client/src/libuv/src/unix",
+     "client/src/signal/include",
+     "//third_party/boringssl/src/include",
+
+    ]
+
+
+    sources = [
+    "Signaler.cpp",
+    "Signaler.h",
+    "SocketIO.h",
+    "SocketIO.cpp",
+    "client/src/base/include/base/buffer.h",
+    "client/src/base/include/base/Timer.h",
+    "client/src/base/include/base/sha1.h",
+    "client/src/base/include/base/base64.h",
+    "client/src/base/include/base/packet.h",
+    "client/src/base/include/base/packetstream.h",
+    "client/src/base/include/base/util.h",
+    "client/src/base/include/base/time.h",
+    "client/src/base/include/base/datetime.h",
+    "client/src/base/include/base/error.h",
+    "client/src/base/include/base/byteorder.h",
+    "client/src/base/include/base/uuid.h",
+    "client/src/base/include/base/signalsHandler.h",
+    "client/src/base/include/base/define.h",
+    "client/src/base/include/base/collection.h",
+    "client/src/base/include/base/base.h",
+    "client/src/base/include/base/queue.h",
+
+    "client/src/base/include/base/process.h",
+    "client/src/base/include/base/singleton.h",
+    "client/src/base/include/base/thread.h",
+    "client/src/base/include/base/platform.h",
+    "client/src/base/include/base/interface.h",
+    "client/src/base/include/base/logger.h",
+    "client/src/base/include/base/application.h",
+    "client/src/base/include/base/idler.h",
+    "client/src/base/include/base/filesystem.h",
+    "client/src/base/include/base/packetqueue.h",
+    "client/src/base/include/base/random.h",
+    "client/src/base/include/base/hex.h",
+    "client/src/base/src/util.cpp",
+    "client/src/base/src/process.cpp",
+    "client/src/base/src/logger.cpp",
+    "client/src/base/src/thread.cpp",
+    "client/src/base/src/time.cpp",
+    "client/src/base/src/Timer.cpp",
+    "client/src/base/src/random.cpp",
+    "client/src/base/src/application.cpp",
+    "client/src/base/src/collection.cpp",
+    "client/src/base/src/buffer.cpp",
+    "client/src/base/src/datetime.cpp",
+    "client/src/base/src/filesystem.cpp",
+    "client/src/base/src/packetstream.cpp",
+
+    "client/src/base/src/base64.cpp",
+    "client/src/base/src/idler.cpp",
+    "client/src/base/src/signalsHandler.cpp",
+    "client/src/base/src/platform.cpp",
+    "client/src/base/src/sha1.cpp",
+
+    "client/src/net/include/net/PortManager.h",
+    "client/src/net/include/net/netInterface.h",
+    "client/src/net/include/net/UdpSocket.h",
+    "client/src/net/include/net/IP.h",
+    "client/src/net/include/net/SslConnection.h",
+    "client/src/net/include/net/ssladapter.h",
+    "client/src/net/include/net/TcpServer.h",
+    "client/src/net/include/net/TcpConnection.h",
+    "client/src/net/include/net/dns.h",
+    "client/src/net/src/TcpServer.cpp",
+    "client/src/net/src/PortManager.cpp",
+    "client/src/net/src/SslConnection.cpp",
+    "client/src/net/src/IP.cpp",
+    "client/src/net/src/TcpConnection.cpp",
+    "client/src/net/src/UdpSocket.cpp",
+    "client/src/net/src/ssladapter.cpp",
+
+    "client/src/http/include/http/responder.h",
+    "client/src/http/include/http/request.h",
+    "client/src/http/include/http/util.h",
+    "client/src/http/include/http/message.h",
+    "client/src/http/include/http/packetizers.h",
+    "client/src/http/include/http/url.h",
+    "client/src/http/include/http/client.h",
+    "client/src/http/include/http/websocket.h",
+    "client/src/http/include/http/HttpServer.h",
+    "client/src/http/include/http/HttpsClient.h",
+    "client/src/http/include/http/cookie.h",
+    "client/src/http/include/http/HttpClient.h",
+    "client/src/http/include/http/http.h",
+    "client/src/http/include/http/response.h",
+    "client/src/http/include/http/HttpConn.h",
+    "client/src/http/include/http/HttpsConn.h",
+    "client/src/http/include/http/parser.h",
+    "client/src/http/include/http/form.h",
+
+    "client/src/http/src/client.cpp",
+    "client/src/http/src/httputil.cpp",
+    "client/src/http/src/request.cpp",
+    "client/src/http/src/response.cpp",
+    "client/src/http/src/HttpServer.cpp",
+    "client/src/http/src/HttpsConn.cpp",
+    "client/src/http/src/cookie.cpp",
+    "client/src/http/src/HttpsClient.cpp",
+    "client/src/http/src/HttpConn.cpp",
+    "client/src/http/src/message.cpp",
+    "client/src/http/src/parser.cpp",
+    "client/src/http/src/packetizers.cpp",
+    "client/src/http/src/url.cpp",
+    "client/src/http/src/HttpClient.cpp",
+    "client/src/http/src/websocket.cpp",
+    "client/src/http/src/form.cpp",
+
+
+    "client/src/signal/include/socketio/packet.h",
+    "client/src/signal/include/socketio/socketioClient.h",
+    "client/src/signal/src/socketioClient.cpp",
+    "client/src/signal/src/packet.cpp",
+
+    "client/src/http_parser/http_parser.h",
+    "client/src/http_parser/http_parser.cpp",
+
+    "client/src/json/src/json.cpp",
+    "client/src/json/src/configuration.cpp",
+
+   
+    ]
+
+    if (is_linux) {
+        cflags = [ "-fexceptions" ]
+        cflags_cc = [ "-fexceptions"]
+      }
+
+    configs += [
+       ":socketio_private_config",
+    ]
+    public_configs = [ ":socketio_config" ]
+
+    }
+
+
+
+    static_library("libuv") {
+ 
+    include_dirs = [ 
+
+     "client/src/libuv/include",
+     "client/src/libuv/src",
+     "client/src/libuv/src/unix",
+ 
+    ]
+
+
+    sources = [
+    "client/src/libuv/src/fs-poll.cpp",
+    "client/src/libuv/src/strscpy.h",
+    "client/src/libuv/src/version.cpp",
+    "client/src/libuv/src/uv-common.h",
+    "client/src/libuv/src/random.cpp",
+    "client/src/libuv/src/uv-data-getter-setters.cpp",
+    "client/src/libuv/src/queue.h",
+    "client/src/libuv/src/heap-inl.h",
+    "client/src/libuv/src/inet.cpp",
+    "client/src/libuv/src/convert..h",
+    "client/src/libuv/src/timer.cpp",
+    "client/src/libuv/src/strscpy.cpp",
+    "client/src/libuv/src/threadpool.cpp",
+    "client/src/libuv/src/uv-common.cpp",
+    ]
+
+    if (!is_win) {
+    sources += [
+      "client/src/libuv/src/unix/async.cpp",
+       "client/src/libuv/src/unix/core.cpp",
+       "client/src/libuv/src/unix/dl.cpp",
+       "client/src/libuv/src/unix/fs.cpp",
+       "client/src/libuv/src/unix/getaddrinfo.cpp",
+       "client/src/libuv/src/unix/getnameinfo.cpp",
+       "client/src/libuv/src/unix/loop-watcher.cpp",
+       "client/src/libuv/src/unix/loop.cpp",
+       "client/src/libuv/src/unix/pipe.cpp",
+       "client/src/libuv/src/unix/poll.cpp",
+       "client/src/libuv/src/unix/process.cpp",
+       "client/src/libuv/src/unix/random-devurandom.cpp",
+       "client/src/libuv/src/unix/signal.cpp",
+       "client/src/libuv/src/unix/stream.cpp",
+       "client/src/libuv/src/unix/tcp.cpp",
+       "client/src/libuv/src/unix/thread.cpp",
+       "client/src/libuv/src/unix/tty.cpp",
+       "client/src/libuv/src/unix/udp.cpp",
+       ]
+
+    }
+
+
+    if (is_linux ) {
+
+      sources += [
+
+       "client/src/libuv/src/unix/linux-core.cpp",
+       "client/src/libuv/src/unix/linux-inotify.cpp",
+       "client/src/libuv/src/unix/linux-syscalls.cpp",
+       "client/src/libuv/src/unix/proctitle.cpp",
+       "client/src/libuv/src/unix/random-getrandom.cpp",
+       "client/src/libuv/src/unix/random-sysctl.cpp",
+
+      ]
+
+    }
+
+    if (is_android ) {
+       sources += [
+
+       "client/src/libuv/src/unix/android-ifaddrs.cpp",
+       "client/src/libuv/src/unix/linux-core.cpp",
+       "client/src/libuv/src/unix/linux-inotify.cpp",
+       "client/src/libuv/src/unix/linux-syscalls.cpp",
+       #"client/src/libuv/src/unix/procfs-exepath.cpp",
+       "client/src/libuv/src/unix/pthread-fixes.cpp",
+       #"client/src/libuv/src/unix/sysinfo-loadavg.cpp",
+    ]
+
+     libs = [ "log" ]
+    }
+
+
+    configs += [
+       ":socketio_private_config",
+    ]
+    public_configs = [ ":socketio_config" ]
+
+    }
+
+
+   executable("testme") {
+    sources = [
+      # sources
+      "main.cpp",
+    ]
+    deps = [
+      ":socketio",
+      ":libuv",
+       "//third_party/boringssl"
+    ]
+    if (is_linux) {
+      cflags = [ "-fexceptions" ]
+    }
+  }
+
+
+}
+
+
+
+
+
