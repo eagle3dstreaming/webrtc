@@ -2,10 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-
+import("//build/config/sanitizers/sanitizers.gni")
 import("//build_overrides/build.gni")
 import("//build/config/arm.gni")
-#import("//testing/libfuzzer/fuzzer_test.gni")
+import("//testing/libfuzzer/fuzzer_test.gni")
 
 config("socketio_config") {
   include_dirs = [ 
@@ -23,17 +23,29 @@ config("socketio_config") {
 
   ]
 
-  #defines = [ "OPUS_FIXED_POINT" ]
-  
-  # cflags = [ "-fexceptions", "-Wno-error" ]
-  cflags_cc = [ "-fexceptions", "-Wno-error" , "-Wno-inconsistent-missing-override",
-    "-Wno-overloaded-virtual"]
+    if (!is_win) 
+    {
+      cflags = [ "-fexceptions", "-Wno-error" ]
+      cflags_cc = [ "-fexceptions", "-Wno-error" , "-Wno-inconsistent-missing-override",
+        "-Wno-overloaded-virtual"]
+
+
+    }
+    else
+    {
+
+       cflags_cc = ["-w",  "/EHsc" , "-Wno-error" , "-Wno-inconsistent-missing-override",
+       "-Wno-overloaded-virtual"]
+
+        defines = [  "SCY_WIN",  ]
+
+    }
+
 }
 
 config("socketio_private_config") {
   defines = [
-    "OPUS_BUILD",
-    "OPUS_EXPORT=",
+    "SCY_WIN",
 
     # Prefer alloca() over variable length arrays which are often inefficient;
     # the opus code will automatically handle this correctly per-platform.
@@ -42,19 +54,13 @@ config("socketio_private_config") {
   ]
 
 
-  cflags = []
+ 
 
   if (is_win) {
-    defines += [ "inline=__inline" ]
-
-  cflags += [ "-fexceptions" ]
-  cflags_cc += [ "-fexceptions"]
+    
 
   } else {
-    defines += [
-   #    "HAVE_LRINT",
-    #   "HAVE_LRINTF",
-    ]
+   
   }
 
 
@@ -204,10 +210,10 @@ config("socketio_private_config") {
    
     ]
 
-    if (is_linux) {
-        cflags = [ "-fexceptions" ]
-        cflags_cc = [ "-fexceptions"]
-      }
+  
+    #cflags = [ "-fexceptions" ]
+    #cflags_cc = [ "-fexceptions"]
+
 
     configs += [
        ":socketio_private_config",
@@ -268,6 +274,36 @@ config("socketio_private_config") {
        "client/src/libuv/src/unix/udp.cpp",
        ]
 
+    }
+    else
+    {
+       sources += [
+       "client/src/libuv/src/win/async.cpp",
+       "client/src/libuv/src/win/core.cpp",
+       "client/src/libuv/src/win/detect-wakeup.cpp",
+       "client/src/libuv/src/win/dl.cpp",
+       "client/src/libuv/src/win/error.cpp",
+       "client/src/libuv/src/win/fs.cpp",
+       "client/src/libuv/src/win/fs-event.cpp",
+       "client/src/libuv/src/win/getaddrinfo.cpp",
+       "client/src/libuv/src/win/getnameinfo.cpp",
+       "client/src/libuv/src/win/handle.cpp",
+       "client/src/libuv/src/win/loop-watcher.cpp",
+       "client/src/libuv/src/win/pipe.cpp",
+       "client/src/libuv/src/win/thread.cpp",
+       "client/src/libuv/src/win/poll.cpp",
+       "client/src/libuv/src/win/process.cpp",
+       "client/src/libuv/src/win/process-stdio.cpp",
+       "client/src/libuv/src/win/signal.cpp",
+       "client/src/libuv/src/win/snprintf.cpp",
+       "client/src/libuv/src/win/stream.cpp",
+       "client/src/libuv/src/win/tcp.cpp",
+       "client/src/libuv/src/win/tty.cpp",
+       "client/src/libuv/src/win/udp.cpp",
+       "client/src/libuv/src/win/util.cpp",
+       "client/src/libuv/src/win/winapi.cpp",
+       "client/src/libuv/src/win/winsock.cpp",
+       ]
     }
 
 
