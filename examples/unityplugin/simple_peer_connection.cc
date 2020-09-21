@@ -320,7 +320,7 @@ bool SimplePeerConnection::CreateOffer() {
   return true;
 }
 
-bool SimplePeerConnection::CreateAnswer() {
+bool SimplePeerConnection::CreateAnswer(std::function<void(std::string type, std::string sdp) > fSdp, std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce) {
   if (!peer_connection_.get())
     return false;
 
@@ -329,6 +329,8 @@ bool SimplePeerConnection::CreateAnswer() {
     options.offer_to_receive_audio = true;
     options.offer_to_receive_video = true;
   }
+  this->cbSdp= fSdp;
+  this->cbIce= fIce;
   peer_connection_->CreateAnswer(this, options);
   return true;
 }
@@ -341,6 +343,10 @@ void SimplePeerConnection::OnSuccess(
   std::string sdp;
   desc->ToString(&sdp);
 
+  if( this->cbSdp )
+  {
+      this->cbSdp(desc->type(), sdp );
+  }
   if (OnLocalSdpReady)
     OnLocalSdpReady(desc->type().c_str(), sdp.c_str());
 }
@@ -362,6 +368,11 @@ void SimplePeerConnection::OnIceCandidate(
     RTC_LOG(LS_ERROR) << "Failed to serialize candidate";
     return;
   }
+
+    if( this->cbIce )
+    {
+        this->cbIce(sdp, candidate->sdp_mline_index(), candidate->sdp_mid() );
+    }
 
   if (OnIceCandiateReady)
     OnIceCandiateReady(sdp.c_str(), candidate->sdp_mline_index(),

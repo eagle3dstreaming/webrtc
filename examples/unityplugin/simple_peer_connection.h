@@ -39,7 +39,7 @@ class SimplePeerConnection : public webrtc::PeerConnectionObserver,
   void AddStreams(bool audio_only);
   bool CreateDataChannel();
   bool CreateOffer();
-  bool CreateAnswer();
+  bool CreateAnswer(std::function<void( std::string type, std::string sdp) > fSdp, std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce);
   bool SendDataViaDataChannel(const std::string& data);
   void SetAudioControl(bool is_mute, bool is_record);
 
@@ -144,6 +144,12 @@ class SimplePeerConnection : public webrtc::PeerConnectionObserver,
   // disallow copy-and-assign
   SimplePeerConnection(const SimplePeerConnection&) = delete;
   SimplePeerConnection& operator=(const SimplePeerConnection&) = delete;
+
+
+    std::function<void( std::string type, std::string sdp) > cbSdp;
+
+    std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> cbIce;
+
 };
 
 #endif  // EXAMPLES_UNITYPLUGIN_SIMPLE_PEER_CONNECTION_H_

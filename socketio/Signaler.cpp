@@ -5,6 +5,7 @@
 #include "base/logger.h"
 
 #include "Signaler.h"
+#include "../examples/unityplugin/unity_plugin_apis.h"
 
 using std::endl;
 
@@ -60,11 +61,11 @@ namespace SdpParse {
         }
 
 
-        void Signaler::postAppMessage(const json& m) {
-
-            LTrace("postAppMessage", cnfg::stringify(m));
-            socket->emit("postAppMessage", m);
-        }
+//        void Signaler::postAppMessage(const json& m) {
+//
+//            LTrace("postAppMessage", cnfg::stringify(m));
+//            socket->emit("postAppMessage", m);
+//        }
         ////////////////////////////////////////////////////////////////////
 
         void Signaler::sendSDP(const std::string& type,  const std::string& sdp, const std::string & remotePeerID, const std::string & from  ) {
@@ -78,11 +79,22 @@ namespace SdpParse {
 
             m["type"] = type;
             m["desc"] = desc;
-            m["from"] = from;
             m["to"] = remotePeerID;
-
+            m["room"] = room;
 
             postMessage(m);
+        }
+
+        void Signaler::sendICE( const std::string& candidate, const int sdpMLineIndex, const std::string& sdpMid, const std::string & remotePeerID, const std::string & from  ) {
+            json desc;
+            desc["candidate"] = candidate;
+            desc["sdpMLineIndex"] = sdpMLineIndex;
+            desc["sdpMid"] = sdpMid;
+            desc["type"] = "candidate";
+            desc["to"] = remotePeerID;
+            desc["room"] = room;
+
+            postMessage(desc);
         }
 
         void Signaler::postMessage(const json& m) {
@@ -116,8 +128,8 @@ namespace SdpParse {
             }
             else
             {
-                SError << " On Peer message is missing participant id ";
-                return;
+                //SError << " On Peer message is missing participant id ";
+               // return;
             }
             
             if (m.find("type") != m.end()) {
@@ -143,7 +155,28 @@ namespace SdpParse {
 
                 //std::string remotePeerID = from;
                 //onffer(room, from, m["desc"]);
-              //  rooms->on_producer_offer( room,  from, m["desc"] );
+                //  rooms->on_producer_offer( room,  from, m["desc"] );
+
+                    SetRemoteDescription(1, "offer", m["desc"]["sdp"].get<std::string>().c_str());
+                     CreateAnswers(1,  [ & ]( string type, string sdp ) {
+
+                         SInfo <<  "Send  "  << type  << " " <<  sdp  << " remote " <<  from  << " local  " << to ;
+
+                        sendSDP( type, sdp,   from,  to  );
+
+                    },
+
+                    [ & ]( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid ) {
+
+                    SInfo <<  candidate  << " " <<  sdp_mline_index << " " << sdp_mid << " remote " <<  from  << " local  " << to ;
+
+                    sendICE( candidate, sdp_mline_index, sdp_mid,  from,  to  );
+
+                    }
+
+                );
+
+
 
             } else if (std::string("answer") == type) {
                // recvSDP(from, m["desc"]);
@@ -158,8 +191,15 @@ namespace SdpParse {
 
 
 
-        void Signaler::recvCandidate(const std::string& token, const json& data) {
-            SDebug << "recvCandidate " << token << "  " << data;
+        void Signaler::recvCandidate(const std::string& from, const json& data) {
+
+            SInfo << "recvCandidate " << from << "  " << data["candidate"].get<std::string>() <<  " " << data["sdpMLineIndex"].get<int>()  << " " << data["sdpMid"].get<std::string>();
+
+            const char* candidate = data["candidate"].get<std::string>().c_str() ;
+            const int sdpMLineIndex= data["sdpMLineIndex"].get<int>();
+            const char* sdpMid= data["sdpMid"].get<std::string>().c_str();
+
+            AddIceCandidate( 1, candidate, sdpMLineIndex, sdpMid);
 
         }
 
@@ -178,8 +218,7 @@ namespace SdpParse {
 
                     socket->on("created", Socket::event_listener_aux([&](string const& name, json const& data, bool isAck, json & ack_resp){
                     
-                    sfuID = data[1].get<std::string>();   
-                    
+
                     if(data.size() > 2) // for ORTC
                     {
                         SInfo << "Created room " << cnfg::stringify(data[0]) << " - my client ID is " << cnfg::stringify(data[1]);

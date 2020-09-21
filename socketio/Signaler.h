@@ -23,7 +23,7 @@ namespace SdpParse {
             void connect(const std::string& host, const uint16_t port);
             
           
-            std::string  sfuID;
+
             
             void run() ;
             
@@ -44,6 +44,7 @@ namespace SdpParse {
 
         public:
             void sendSDP( const std::string& type, const std::string& sdp,  const std::string & remoteID, const std::string & from);
+            void sendICE( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid, const std::string & remotePeerID, const std::string & from  );
             void postMessage(const json& m);
             void postAppMessage(const json& m);
                       // void onPeerConnected(std::string& peerID);

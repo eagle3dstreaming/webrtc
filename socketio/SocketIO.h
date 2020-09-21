@@ -13,11 +13,14 @@ namespace sa {
 
 
 
-  	void connect(const std::string& host, const uint16_t port);
+  	void  connect(const char* signalip, const int signalport, const char** turn_urls,
+					   const int no_of_urls,
+					   const char* username,
+					   const char* credential,
+					   bool mandatory_receive_video);
 
     void  stop( );
 
-    void UploadedPercentage(const std::string& file, const int& prog);
 
     void cbFailure(const std::string& file, const std::string &reason, const int &code );
     

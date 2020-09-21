@@ -3,15 +3,15 @@
 #include <unistd.h>
 #include <iostream>
 
- const std::string ip = "192.168.0.16";
+ const char ip[] = "192.168.0.16";
    
- const int port = 1794;
+ const int port = 8080;
 
 int main(int argc, char** argv) {
 
 //    sa::stop();
    
-    sa::connect(ip, port);
+    sa::connect(ip, port, nullptr, 2, nullptr,nullptr,true);
 
     usleep(900000000);
     std::cout << "Signal Client Terminating" << std::endl << std::flush;

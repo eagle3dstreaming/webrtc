@@ -14,6 +14,7 @@
 #define EXAMPLES_UNITYPLUGIN_UNITY_PLUGIN_APIS_H_
 
 #include <stdint.h>
+#include <functional>
 
 // Definitions of callback functions.
 typedef void (*I420FRAMEREADY_CALLBACK)(const uint8_t* data_y,
@@ -65,6 +66,10 @@ WEBRTC_PLUGIN_API bool AddDataChannel(int peer_connection_id);
 WEBRTC_PLUGIN_API bool CreateOffer(int peer_connection_id);
 // Create a peer connection answer.
 WEBRTC_PLUGIN_API bool CreateAnswer(int peer_connection_id);
+
+
+WEBRTC_PLUGIN_API bool CreateAnswers(int peer_connection_id, std::function<void(std::string type, std::string sdp) > fSdp,  std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce);
+
 // Send data through data channel.
 WEBRTC_PLUGIN_API bool SendDataViaDataChannel(int peer_connection_id,
                                               const char* data);

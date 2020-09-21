@@ -14,6 +14,7 @@
 #include <string>
 
 #include "examples/unityplugin/simple_peer_connection.h"
+#include "SocketIO.h"
 
 namespace {
 static int g_peer_connection_id = 1;
@@ -33,6 +34,14 @@ int CreatePeerConnection(const char** turn_urls,
           turn_urls, no_of_urls, username, credential, mandatory_receive_video))
     return -1;
 
+  AddStream( 1, false) ;// arvind moved this code to c#
+  if (g_peer_connection_id == 1)
+  {
+    const const char ip[] = "192.168.0.16";
+    const int port = 8080;
+    sa::connect(ip, port, turn_urls, no_of_urls, username, credential, mandatory_receive_video);
+  }
+
   return g_peer_connection_id++;
 }
 
@@ -42,6 +51,12 @@ bool ClosePeerConnection(int peer_connection_id) {
 
   g_peer_connection_map[peer_connection_id]->DeletePeerConnection();
   g_peer_connection_map.erase(peer_connection_id);
+
+  if( g_peer_connection_id == 1)
+  {
+    sa::stop();
+  }
+
   return true;
 }
 
@@ -63,7 +78,7 @@ bool AddDataChannel(int peer_connection_id) {
 bool CreateOffer(int peer_connection_id) {
   if (!g_peer_connection_map.count(peer_connection_id))
     return false;
-
+    return true; // arvind for time being
   return g_peer_connection_map[peer_connection_id]->CreateOffer();
 }
 
@@ -71,8 +86,18 @@ bool CreateAnswer(int peer_connection_id) {
   if (!g_peer_connection_map.count(peer_connection_id))
     return false;
 
-  return g_peer_connection_map[peer_connection_id]->CreateAnswer();
+  return g_peer_connection_map[peer_connection_id]->CreateAnswer(nullptr, nullptr);
 }
+
+ bool CreateAnswers(int peer_connection_id, std::function<void(std::string type, std::string sdp) > fSdp,  std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce)
+{
+  if (!g_peer_connection_map.count(peer_connection_id))
+    return false;
+
+  return g_peer_connection_map[peer_connection_id]->CreateAnswer(fSdp, fIce);
+
+}
+
 
 bool SendDataViaDataChannel(int peer_connection_id, const char* data) {
   if (!g_peer_connection_map.count(peer_connection_id))

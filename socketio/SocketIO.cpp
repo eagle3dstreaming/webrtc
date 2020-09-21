@@ -20,7 +20,11 @@ namespace sa {
     Signaler *thread = nullptr ;
 
 
-    void connect(const std::string& ip, const uint16_t port)
+    void connect(const char* ip, const int port, const char** turn_urls,
+                 const int no_of_urls,
+                 const char* username,
+                 const char* credential,
+                 bool mandatory_receive_video)
     {
        // sigObj.connect(host, port );
         
@@ -44,26 +48,22 @@ namespace sa {
         }
     }
 
-    
-    void UploadedPercentage(const std::string& file, const int& prog)
-    {
-        SInfo << "Percentage uploaded " << prog;
-    }
+
+
 
 
     void cbFailure(const std::string& file, const std::string &reason, const int &code )
     {
-        SInfo << "Uploade failure. "  <<  reason;
+        SInfo << " failure. "  <<  reason;
 
     }
 
     void cbSuccess(const std::string& file, const std::string &reason)
     {
-        SInfo << "Uploade Suceess. "  << reason;
+        SInfo << " Suceess. "  << reason;
     }
 
 
-    
  
 
     void  stop( )
