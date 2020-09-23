@@ -22,8 +22,7 @@ group("examples") {
   testonly = true
   deps = []
 
-  deps += [ "//socketio" ]
-
+ 
   if (is_android) {
     deps += [
       ":AppRTCMobile",
@@ -819,6 +818,8 @@ if (is_win || is_android || is_linux) {
       "../test:platform_video_capturer",
       "../test:video_test_common",
       "//third_party/abseil-cpp/absl/memory",
+      "//socketio",
+      "//socketio:libuv",
     ]
     if (is_android) {
       deps += [

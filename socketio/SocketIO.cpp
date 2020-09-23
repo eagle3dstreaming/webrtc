@@ -71,7 +71,7 @@ namespace sa {
         
         
         if(thread)
-	{
+	    {
           thread->shutdown();
           thread->join();
           delete thread;

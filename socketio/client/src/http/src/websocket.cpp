@@ -145,7 +145,7 @@ namespace base {
             sendClientRequest();
         }
 
-        void WebSocketConnection::onSocketRecv(const std::string& buffer) {
+        void WebSocketConnection::onSocketRecv( std::string buffer) {
             //LTrace("On recv: ", buffer.size())
 
             if (framer.handshakeComplete()) {
@@ -158,7 +158,15 @@ namespace base {
                 //
                 // Incoming frames may be joined, so we parse them
                 // in a loop until the read buffer is empty.
+
+                if( !storeBuf.empty())
+                {
+                    buffer = storeBuf + buffer;
+                    storeBuf.clear();
+                }
+
                 BitReader reader(buffer);
+
                 size_t total = reader.available();
                 size_t offset = reader.position();
                 while (offset < total) {
@@ -195,6 +203,9 @@ namespace base {
                                 continue;
                             }
                     } catch (std::exception& exc) {
+
+                        storeBuf = buffer.substr(offset);
+
                         LError("Parser error: ", exc.what())
                         //socket->setError(exc.what());
                         return;
@@ -461,6 +472,16 @@ namespace base {
             if (lengthByte & FRAME_FLAG_MASK)
                 maskOffset += 4;
             lengthByte &= 0x7f;
+
+
+          //  int x = frame.available();
+
+            if( lengthByte >frame.available())
+            {
+                throw std::runtime_error(
+                        util::format("WebSocket error: Insufficient buffer for payload %d", frame.limit())); //,
+            }
+
             if (lengthByte + 2 + maskOffset < MAX_HEADER_LENGTH) {
                 frame.get(header + 2, lengthByte + maskOffset);
             } else {

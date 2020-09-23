@@ -40,6 +40,8 @@
 
 #endif
 
+//#define WEBRTC_ANDROIDNOT 1
+
 // Names used for media stream ids.
 const char kAudioLabel[] = "audio_label";
 const char kVideoLabel[] = "video_label";
@@ -180,12 +182,13 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
             webrtc::CreateBuiltinAudioDecoderFactory(),
 
             std::unique_ptr<webrtc::VideoEncoderFactory>(
-                    new webrtc::MultiplexAugmentOnlyEncoderFactory(
-                            absl::WrapUnique(CreateVideoEncoderFactory(env,   ( const webrtc::JavaRef<jobject>&) ME_obj )), true ))
+                    new webrtc::MultiplexEncoderFactory(
+                            absl::WrapUnique(CreateVideoEncoderFactory(env,   ( const webrtc::JavaRef<jobject>&) ME_obj )),
+                            false ))
                     ,
             std::unique_ptr<webrtc::VideoDecoderFactory>(
-                    new webrtc::MultiplexAugmentOnlyDecoderFactory(
-                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) MD_obj)), true ))
+                    new webrtc::MultiplexDecoderFactory(
+                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) MD_obj)), false ))
                     ,
             nullptr, nullptr);
 #else //for ios
@@ -210,11 +213,11 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
             nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
             webrtc::CreateBuiltinAudioDecoderFactory(),
             std::unique_ptr<webrtc::VideoEncoderFactory>(
-                new webrtc::MultiplexAugmentOnlyEncoderFactory(
-                        std::move(encoder_factory), true)),
+                new webrtc::MultiplexEncoderFactory(
+                        std::move(encoder_factory), false)),
             std::unique_ptr<webrtc::VideoDecoderFactory>(
-                new webrtc::MultiplexAugmentOnlyDecoderFactory(
-                        std::move(decoder_factory), true)),
+                new webrtc::MultiplexDecoderFactory(
+                        std::move(decoder_factory), false)),
             nullptr, nullptr);
 #endif
   }
@@ -721,19 +724,19 @@ void SimplePeerConnection::I420_PushFrame(const uint8_t* data_y, const uint8_t* 
         return;  // Out of memory runtime error.
     }
 
-    rtc::scoped_refptr<webrtc::VideoFrameBuffer> vdfbuffer(scaled_buffer );
-    std::unique_ptr<uint8_t[]> augmenting_data;
-    augmenting_data =std::unique_ptr<uint8_t[]>(new uint8_t[stride_a]);
-    memcpy(augmenting_data.get(),  data_a,  stride_a);
-
-    rtc::scoped_refptr<webrtc::AugmentedVideoFrameBuffer> augmented_buffer =
-            new rtc::RefCountedObject<webrtc::AugmentedVideoFrameBuffer>(vdfbuffer,
-                                                                         std::move(augmenting_data),
-                                                                         stride_a);
+//    rtc::scoped_refptr<webrtc::VideoFrameBuffer> vdfbuffer(scaled_buffer );
+//    std::unique_ptr<uint8_t[]> augmenting_data;
+//    augmenting_data =std::unique_ptr<uint8_t[]>(new uint8_t[stride_a]);
+//    memcpy(augmenting_data.get(),  data_a,  stride_a);
+//
+//    rtc::scoped_refptr<webrtc::AugmentedVideoFrameBuffer> augmented_buffer =
+//            new rtc::RefCountedObject<webrtc::AugmentedVideoFrameBuffer>(vdfbuffer,
+//                                                                         std::move(augmenting_data),
+//                                                                         stride_a);
 
     webrtc::VideoFrame::Builder new_frame_builder =
             webrtc::VideoFrame::Builder()
-                    .set_video_frame_buffer(augmented_buffer)
+                    .set_video_frame_buffer(scaled_buffer)
                     .set_rotation(webrtc::kVideoRotation_180)
                     .set_timestamp_us(rtc::TimeMicros())
                     .set_id(++myid);

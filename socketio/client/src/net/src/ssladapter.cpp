@@ -360,7 +360,7 @@ namespace base {
 
       /* Arvind TBD. Below code does not work with lower version of OpenSSL.
         In future I will replace TLS with DTLS
-
+      */
         void SSLAdapter::flushReadBIO() {
             size_t npending = BIO_ctrl_pending(_readBIO);
             if (npending > 0) {
@@ -373,7 +373,8 @@ namespace base {
                 }
             }
         }
-        */ 
+
+        /*
         void SSLAdapter::flushReadBIO() {
             size_t npending = BIO_ctrl_pending(_readBIO);
             if (npending > 0) {
@@ -389,7 +390,7 @@ namespace base {
                 }
                 _socket->on_read(buffer, ntotal); // arvind
             }
-        }
+        }*/
 
         void SSLAdapter::flushWriteBIO() {
             size_t npending = BIO_ctrl_pending(_writeBIO);

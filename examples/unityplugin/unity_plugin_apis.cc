@@ -14,7 +14,7 @@
 #include <string>
 
 #include "examples/unityplugin/simple_peer_connection.h"
-#include "SocketIO.h"
+#include "socketio/SocketIO.h"
 
 namespace {
 static int g_peer_connection_id = 1;
@@ -22,7 +22,7 @@ static std::map<int, rtc::scoped_refptr<SimplePeerConnection>>
     g_peer_connection_map;
 }  // namespace
 
-int CreatePeerConnection(const char** turn_urls,
+int CreatePeerConnection(const char* ip, const int port, const char** turn_urls,
                          const int no_of_urls,
                          const char* username,
                          const char* credential,
@@ -34,12 +34,10 @@ int CreatePeerConnection(const char** turn_urls,
           turn_urls, no_of_urls, username, credential, mandatory_receive_video))
     return -1;
 
-  AddStream( 1, false) ;// arvind moved this code to c#
+ // AddStream( 1, false) ;// arvind moved this code to c#
   if (g_peer_connection_id == 1)
   {
-    const const char ip[] = "192.168.0.16";
-    const int port = 8080;
-    sa::connect(ip, port, turn_urls, no_of_urls, username, credential, mandatory_receive_video);
+        sa::connect(ip, port, turn_urls, no_of_urls, username, credential, mandatory_receive_video);
   }
 
   return g_peer_connection_id++;
@@ -78,7 +76,6 @@ bool AddDataChannel(int peer_connection_id) {
 bool CreateOffer(int peer_connection_id) {
   if (!g_peer_connection_map.count(peer_connection_id))
     return false;
-    return true; // arvind for time being
   return g_peer_connection_map[peer_connection_id]->CreateOffer();
 }
 
