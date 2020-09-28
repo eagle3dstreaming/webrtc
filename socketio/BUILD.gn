@@ -329,6 +329,8 @@ config("socketio_private_config") {
        "client/src/libuv/src/unix/linux-syscalls.cpp",
        #"client/src/libuv/src/unix/procfs-exepath.cpp",
        "client/src/libuv/src/unix/pthread-fixes.cpp",
+       "client/src/libuv/src/unix/random-getrandom.cpp",
+       "client/src/libuv/src/unix/random-sysctl.cpp",
        #"client/src/libuv/src/unix/sysinfo-loadavg.cpp",
     ]
 
