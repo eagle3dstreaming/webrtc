@@ -68,7 +68,13 @@ WEBRTC_PLUGIN_API bool CreateOffer(int peer_connection_id);
 WEBRTC_PLUGIN_API bool CreateAnswer(int peer_connection_id);
 
 
-WEBRTC_PLUGIN_API bool CreateAnswers(int peer_connection_id, std::function<void(std::string type, std::string sdp) > fSdp,  std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce);
+WEBRTC_PLUGIN_API bool CreateAnswer_cb(int peer_connection_id, std::function<void(std::string type, std::string sdp) > fSdp);
+
+
+WEBRTC_PLUGIN_API void OnIce(int peer_connection_id, std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce);
+
+
+
 
 // Send data through data channel.
 WEBRTC_PLUGIN_API bool SendDataViaDataChannel(int peer_connection_id,

@@ -310,7 +310,8 @@ void SimplePeerConnection::DeletePeerConnection() {
   }
 }
 
-bool SimplePeerConnection::CreateOffer() {
+bool SimplePeerConnection::CreateOffer(std::function<void( const std::string& type, const std::string& sdp) > fSdp) {
+
   if (!peer_connection_.get())
     return false;
 
@@ -319,11 +320,13 @@ bool SimplePeerConnection::CreateOffer() {
     options.offer_to_receive_audio = true;
     options.offer_to_receive_video = true;
   }
+    this->cbSdp= fSdp;
+
   peer_connection_->CreateOffer(this, options);
   return true;
 }
 
-bool SimplePeerConnection::CreateAnswer(std::function<void(std::string type, std::string sdp) > fSdp, std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce) {
+bool SimplePeerConnection::CreateAnswer(std::function<void( const std::string& type, const std::string& sdp) > fSdp) {
   if (!peer_connection_.get())
     return false;
 
@@ -333,10 +336,18 @@ bool SimplePeerConnection::CreateAnswer(std::function<void(std::string type, std
     options.offer_to_receive_video = true;
   }
   this->cbSdp= fSdp;
-  this->cbIce= fIce;
+
   peer_connection_->CreateAnswer(this, options);
   return true;
 }
+
+void SimplePeerConnection::OnIce(std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce) {
+    if (!peer_connection_.get())
+        return ;
+    this->cbIce= fIce;
+
+}
+
 
 void SimplePeerConnection::OnSuccess(
     webrtc::SessionDescriptionInterface* desc) {

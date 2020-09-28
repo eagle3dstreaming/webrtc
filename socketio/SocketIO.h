@@ -22,9 +22,9 @@ namespace sa {
     void  stop( );
 
 
-    void cbFailure(const std::string& file, const std::string &reason, const int &code );
+	void createoffer( const std::string& type, const std::string& sdp);
     
-    void cbSuccess(const std::string& file, const std::string &reason);
+
     
  
 

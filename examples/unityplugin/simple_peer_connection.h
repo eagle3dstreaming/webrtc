@@ -38,10 +38,11 @@ class SimplePeerConnection : public webrtc::PeerConnectionObserver,
   void DeletePeerConnection();
   void AddStreams(bool audio_only);
   bool CreateDataChannel();
-  bool CreateOffer();
-  bool CreateAnswer(std::function<void( std::string type, std::string sdp) > fSdp, std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce);
+  bool CreateOffer(std::function<void( const std::string& type, const std::string& sdp) > fSdp);
+  bool CreateAnswer(std::function<void(  const std::string& type, const std::string& sdp) > fSdp);
   bool SendDataViaDataChannel(const std::string& data);
   void SetAudioControl(bool is_mute, bool is_record);
+  void OnIce(std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce) ;
 
   // Register callback functions.
   void RegisterOnLocalI420FrameReady(I420FRAMEREADY_CALLBACK callback);

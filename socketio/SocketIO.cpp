@@ -51,20 +51,14 @@ namespace sa {
 
 
 
-
-    void cbFailure(const std::string& file, const std::string &reason, const int &code )
+    void createoffer( const std::string& type, const std::string& sdp)
     {
-        SInfo << " failure. "  <<  reason;
+        SInfo <<  type ;
+
+        thread->sendSDP (type , sdp,"");
 
     }
 
-    void cbSuccess(const std::string& file, const std::string &reason)
-    {
-        SInfo << " Suceess. "  << reason;
-    }
-
-
- 
 
     void  stop( )
     {

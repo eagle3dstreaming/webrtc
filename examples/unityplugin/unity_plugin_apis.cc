@@ -76,24 +76,46 @@ bool AddDataChannel(int peer_connection_id) {
 bool CreateOffer(int peer_connection_id) {
   if (!g_peer_connection_map.count(peer_connection_id))
     return false;
-  return g_peer_connection_map[peer_connection_id]->CreateOffer();
+
+
+
+    return g_peer_connection_map[peer_connection_id]->CreateOffer(
+
+            [](  const std::string& type, const std::string& sdp)
+              {
+                  sa::createoffer( type, sdp );
+              }
+
+            );
 }
+
 
 bool CreateAnswer(int peer_connection_id) {
   if (!g_peer_connection_map.count(peer_connection_id))
     return false;
 
-  return g_peer_connection_map[peer_connection_id]->CreateAnswer(nullptr, nullptr);
+  return g_peer_connection_map[peer_connection_id]->CreateAnswer(nullptr);
 }
 
- bool CreateAnswers(int peer_connection_id, std::function<void(std::string type, std::string sdp) > fSdp,  std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce)
+ bool CreateAnswer_cb(int peer_connection_id, std::function<void(std::string type, std::string sdp) > fSdp)
 {
   if (!g_peer_connection_map.count(peer_connection_id))
     return false;
 
-  return g_peer_connection_map[peer_connection_id]->CreateAnswer(fSdp, fIce);
+  return g_peer_connection_map[peer_connection_id]->CreateAnswer(fSdp);
 
 }
+
+
+
+void OnIce(int peer_connection_id, std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce)
+{
+    if (!g_peer_connection_map.count(peer_connection_id))
+        return ;
+
+    return g_peer_connection_map[peer_connection_id]->OnIce(fIce);
+}
+
 
 
 bool SendDataViaDataChannel(int peer_connection_id, const char* data) {
