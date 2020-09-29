@@ -39,6 +39,12 @@ config("socketio_config") {
 
         defines = [  "SCY_WIN",  ]
 
+        libs = [
+      
+        "userenv.lib",
+
+        ]
+
     }
 
 }
@@ -301,6 +307,7 @@ config("socketio_private_config") {
        "client/src/libuv/src/win/util.cpp",
        "client/src/libuv/src/win/winapi.cpp",
        "client/src/libuv/src/win/winsock.cpp",
+       "client/src/libuv/src/idna.cpp",
        ]
     }
 
