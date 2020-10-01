@@ -50,7 +50,7 @@ typedef void (*AUDIOBUSREADY_CALLBACK)(const void* audio_data,
 
 extern "C" {
 // Create a peerconnection and return a unique peer connection id.
-WEBRTC_PLUGIN_API int CreatePeerConnection(const char* ip, const int port, const char** turn_urls,
+WEBRTC_PLUGIN_API int CreatePeerConnection(const char* ip, const int port, const char* roomid, const char** turn_urls,
                                            const int no_of_urls,
                                            const char* username,
                                            const char* credential,

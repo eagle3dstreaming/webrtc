@@ -20,7 +20,7 @@ namespace sa {
     Signaler *thread = nullptr ;
 
 
-    void connect(const char* ip, const int port, const char** turn_urls,
+    void connect(const char* ip, const int port, const char* roomid, const char** turn_urls,
                  const int no_of_urls,
                  const char* username,
                  const char* credential,
@@ -37,7 +37,7 @@ namespace sa {
 
             SInfo << "connect " << connect  <<  " port " << port ;
 
-            thread = new Signaler(ip, port);
+            thread = new Signaler(ip, port, roomid);
             
             thread->start();
 

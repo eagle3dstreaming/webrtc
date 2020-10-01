@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
 
 //    sa::stop();
    
-    sa::connect(ip, port, nullptr, 2, nullptr,nullptr,true);
+    sa::connect(ip, port,"room1", nullptr, 2, nullptr,nullptr,true);
 
     usleep(900000000);
     std::cout << "Signal Client Terminating" << std::endl << std::flush;

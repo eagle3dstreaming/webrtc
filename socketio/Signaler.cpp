@@ -12,9 +12,9 @@ using std::endl;
 namespace base {
 namespace SdpParse {
 
-        Signaler::Signaler(const std::string ip, const uint16_t port) : m_IP(ip), m_port(port),shuttingDown(false)
+        Signaler::Signaler(const std::string ip, const uint16_t port, const std::string roomid ) : m_IP(ip), m_port(port),shuttingDown(false)
         {
-            room = "room1";
+            room = roomid;
            // Logger::instance().add(new ConsoleChannel("debug", Level::Trace));
             Logger::instance().add(new ConsoleChannel("debug", Level::Trace));
 

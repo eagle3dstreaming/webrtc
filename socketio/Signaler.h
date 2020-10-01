@@ -16,7 +16,7 @@ namespace SdpParse {
         class Signaler :public Thread {
         public:
             
-            Signaler(const std::string ip, const uint16_t port) ;
+            Signaler(const std::string ip, const uint16_t port,  const std::string roomid ) ;
             
             ~Signaler();
 

@@ -22,7 +22,7 @@ static std::map<int, rtc::scoped_refptr<SimplePeerConnection>>
     g_peer_connection_map;
 }  // namespace
 
-int CreatePeerConnection(const char* ip, const int port, const char** turn_urls,
+int CreatePeerConnection(const char* ip, const int port, const char* roomid, const char** turn_urls,
                          const int no_of_urls,
                          const char* username,
                          const char* credential,
@@ -37,7 +37,7 @@ int CreatePeerConnection(const char* ip, const int port, const char** turn_urls,
  // AddStream( 1, false) ;// arvind moved this code to c#
   if (g_peer_connection_id == 1)
   {
-        sa::connect(ip, port, turn_urls, no_of_urls, username, credential, mandatory_receive_video);
+        sa::connect(ip, port, roomid, turn_urls, no_of_urls, username, credential, mandatory_receive_video);
   }
 
   return g_peer_connection_id++;
@@ -49,6 +49,8 @@ bool ClosePeerConnection(int peer_connection_id) {
 
   g_peer_connection_map[peer_connection_id]->DeletePeerConnection();
   g_peer_connection_map.erase(peer_connection_id);
+
+  g_peer_connection_id =1;
 
   if( g_peer_connection_id == 1)
   {
