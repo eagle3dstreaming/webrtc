@@ -30,7 +30,7 @@ int CreatePeerConnection(const char* ip, const int port, const char* roomid, con
                          const char* credential,
                          bool mandatory_receive_video) {
   g_peer_connection_map[g_peer_connection_id] =
-      new rtc::RefCountedObject<SimplePeerConnection>();
+      new rtc::RefCountedObject<SimplePeerConnection>(g_peer_connection_id);
 
   if (!g_peer_connection_map[g_peer_connection_id]->InitializePeerConnection(
           turn_urls, no_of_urls, username, credential, mandatory_receive_video))

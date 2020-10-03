@@ -27,7 +27,7 @@ class SimplePeerConnection : public webrtc::PeerConnectionObserver,
                              public webrtc::DataChannelObserver,
                              public webrtc::AudioTrackSinkInterface {
  public:
-  SimplePeerConnection() {}
+  SimplePeerConnection( int id):nClientID(id) {}
   ~SimplePeerConnection() {}
 
   bool InitializePeerConnection(const char** turn_urls,
@@ -87,6 +87,10 @@ class SimplePeerConnection : public webrtc::PeerConnectionObserver,
       webrtc::PeerConnectionInterface::SignalingState new_state) override {}
   void OnAddStream(
       rtc::scoped_refptr<webrtc::MediaStreamInterface> stream) override;
+
+  void OnAddTrack(
+            rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+            const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)  override;
   void OnRemoveStream(
       rtc::scoped_refptr<webrtc::MediaStreamInterface> stream) override {}
   void OnDataChannel(
@@ -147,9 +151,11 @@ class SimplePeerConnection : public webrtc::PeerConnectionObserver,
   SimplePeerConnection& operator=(const SimplePeerConnection&) = delete;
 
 
-    std::function<void( std::string type, std::string sdp) > cbSdp;
+  std::function<void( std::string type, std::string sdp) > cbSdp;
 
-    std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> cbIce;
+  std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> cbIce;
+
+  int nClientID;
 
 };
 

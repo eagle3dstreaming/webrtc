@@ -274,6 +274,7 @@ bool SimplePeerConnection::CreatePeerConnection(const char** turn_urls,
   config_.servers.push_back(stun_server);
   config_.enable_rtp_data_channel = true;
   config_.enable_dtls_srtp = true;
+  config_.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
 
   peer_connection_ = g_peer_connection_factory->CreatePeerConnection(
       config_, nullptr, nullptr, this);
@@ -540,19 +541,45 @@ void SimplePeerConnection::OnAddStream(
   SetAudioControl();
 }
 
-void SimplePeerConnection::AddStreams(bool audio_only) {
-  if (active_streams_.find(kStreamId) != active_streams_.end())
-    return;  // Already added.
+void SimplePeerConnection::OnAddTrack(
+        rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
+        const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams) {
 
-  rtc::scoped_refptr<webrtc::MediaStreamInterface> stream =
-      g_peer_connection_factory->CreateLocalMediaStream(kStreamId);
+
+    rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track =
+            receiver->track();
+    if (track && remote_video_observer_ &&
+        track->kind() == webrtc::MediaStreamTrackInterface::kVideoKind) {
+        static_cast<webrtc::VideoTrackInterface*>(track.get())
+                ->AddOrUpdateSink(remote_video_observer_.get(), rtc::VideoSinkWants());
+        RTC_LOG(LS_INFO) << "Remote video sink set up: " << track;
+
+    }
+
+
+   // SetAudioControl();
+}
+
+
+void SimplePeerConnection::AddStreams(bool audio_only) {
+//  if (active_streams_.find(kStreamId) != active_streams_.end())
+//    return;  // Already added.
+
+    if (!peer_connection_->GetSenders().empty()) {
+        return;  // Already added tracks.
+    }
+
+//  rtc::scoped_refptr<webrtc::MediaStreamInterface> stream =
+//      g_peer_connection_factory->CreateLocalMediaStream(kStreamId);
 
   rtc::scoped_refptr<webrtc::AudioTrackInterface> audio_track(
       g_peer_connection_factory->CreateAudioTrack(
           kAudioLabel, g_peer_connection_factory->CreateAudioSource(
                            cricket::AudioOptions())));
   std::string id = audio_track->id();
-  stream->AddTrack(audio_track);
+  //stream->AddTrack(audio_track);
+  // peer_connection_->AddTransceiver(audio_track);
+    peer_connection_->AddTrack(audio_track, {kStreamId});
 
   if (!audio_only) {
 #if defined(WEBRTC_ANDROIDNOT)
@@ -586,7 +613,16 @@ void SimplePeerConnection::AddStreams(bool audio_only) {
     rtc::scoped_refptr<webrtc::VideoTrackInterface> video_track(
         g_peer_connection_factory->CreateVideoTrack(kVideoLabel,
                                                     source.release()));
-    stream->AddTrack(video_track);
+   // stream->AddTrack(video_track);
+
+    video_track->set_enabled(true);
+    peer_connection_->AddTrack(video_track, {kStreamId});
+
+    if (local_video_observer_) {
+            video_track->AddOrUpdateSink(local_video_observer_.get(),
+                                                   rtc::VideoSinkWants());
+    }
+
 #else
   
     video_device = CapturerTrackSource::Create();
@@ -596,23 +632,31 @@ void SimplePeerConnection::AddStreams(bool audio_only) {
           g_peer_connection_factory->CreateVideoTrack(kVideoLabel,
                                                       video_device));
 
-      stream->AddTrack(video_track);
+      //stream->AddTrack(video_track);
+
+      video_track->set_enabled(true);
+      peer_connection_->AddTrack(video_track, {kStreamId});
+
+      if (local_video_observer_) {
+            video_track->AddOrUpdateSink(local_video_observer_.get(),
+                                                   rtc::VideoSinkWants());
+      }
     }
 #endif
-    if (local_video_observer_ && !stream->GetVideoTracks().empty()) {
-      stream->GetVideoTracks()[0]->AddOrUpdateSink(local_video_observer_.get(),
-                                                   rtc::VideoSinkWants());
-    }
+//    if (local_video_observer_ && !stream->GetVideoTracks().empty()) {
+//      stream->GetVideoTracks()[0]->AddOrUpdateSink(local_video_observer_.get(),
+//                                                   rtc::VideoSinkWants());
+//    }
   }
 
-  if (!peer_connection_->AddStream(stream)) {
-    RTC_LOG(LS_ERROR) << "Adding stream to PeerConnection failed";
-  }
-
-  typedef std::pair<std::string,
-                    rtc::scoped_refptr<webrtc::MediaStreamInterface>>
-      MediaStreamPair;
-  active_streams_.insert(MediaStreamPair(stream->id(), stream));
+//  if (!peer_connection_->AddStream(stream)) {
+//    RTC_LOG(LS_ERROR) << "Adding stream to PeerConnection failed";
+//  }
+//
+//  typedef std::pair<std::string,
+//                    rtc::scoped_refptr<webrtc::MediaStreamInterface>>
+//      MediaStreamPair;
+//  active_streams_.insert(MediaStreamPair(stream->id(), stream));
 }
 
 bool SimplePeerConnection::CreateDataChannel() {
