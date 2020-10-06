@@ -32,9 +32,17 @@ int CreatePeerConnection(const char* ip, const int port, const char* roomid, con
   g_peer_connection_map[g_peer_connection_id] =
       new rtc::RefCountedObject<SimplePeerConnection>(g_peer_connection_id);
 
-  if (!g_peer_connection_map[g_peer_connection_id]->InitializePeerConnection(
+  g_peer_connection_map[g_peer_connection_id+1] =
+            new rtc::RefCountedObject<SimplePeerConnection>(g_peer_connection_id+1);
+
+
+    if (!g_peer_connection_map[g_peer_connection_id]->InitializePeerConnection(
           turn_urls, no_of_urls, username, credential, mandatory_receive_video))
     return -1;
+
+    if (!g_peer_connection_map[g_peer_connection_id+1]->InitializePeerConnection(
+            turn_urls, no_of_urls, username, credential, mandatory_receive_video))
+        return -1;
 
  // AddStream( 1, false) ;// arvind moved this code to c#
   if (!signalerLoaded)
@@ -53,7 +61,13 @@ bool ClosePeerConnection(int peer_connection_id) {
   g_peer_connection_map[peer_connection_id]->DeletePeerConnection();
   g_peer_connection_map.erase(peer_connection_id);
 
-  g_peer_connection_id =1;
+
+    g_peer_connection_map[peer_connection_id+1]->DeletePeerConnection();
+    g_peer_connection_map.erase(peer_connection_id+1);
+
+
+
+    g_peer_connection_id =1;
 
   if( g_peer_connection_id == 1)
   {
@@ -181,6 +195,10 @@ bool RegisterOnRemoteI420FrameReady(int peer_connection_id,
 
   g_peer_connection_map[peer_connection_id]->RegisterOnRemoteI420FrameReady(
       callback);
+
+    g_peer_connection_map[peer_connection_id+1]->RegisterOnRemoteI420FrameReady(
+            callback);
+
   return true;
 }
 

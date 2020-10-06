@@ -14,7 +14,7 @@ namespace SdpParse {
 
         Signaler::Signaler(const std::string ip, const uint16_t port, const std::string roomid ) : m_IP(ip), m_port(port),shuttingDown(false)
         {
-            room = roomid;
+            room = "foo";//roomid;
            // Logger::instance().add(new ConsoleChannel("debug", Level::Trace));
             Logger::instance().add(new ConsoleChannel("debug", Level::Trace));
 
@@ -103,7 +103,7 @@ namespace SdpParse {
         void Signaler::postMessage(const json& m) {
 
             SInfo <<  cnfg::stringify(m);
-            socket->emit("message", m);
+            socket->emit("sfu-message", m);
         }
 
         
@@ -143,11 +143,11 @@ namespace SdpParse {
             if (m.find("room") != m.end()) {
                 room = m["room"].get<std::string>();
             }
-            else
-            {
-                SError << " On Peer message is missing room id ";
-                return;
-            }
+//            else
+//            {
+//                SError << " On Peer message is missing room id ";
+//                return;
+//            }
             
 
 
@@ -159,10 +159,12 @@ namespace SdpParse {
                 //  rooms->on_producer_offer( room,  from, m["desc"] );
                    std::string sSdp  =  m["desc"]["sdp"].get<std::string>();
 
-                    SetRemoteDescription(1, "offer", sSdp.c_str());
-                    CreateAnswer_cb(1,  [ to, from, this ]( string type, string sdp ) {
+                   SInfo <<  "onoffer "  << sSdp ;
 
-                        // SInfo <<  "Send  "  << type  << " " <<  sdp  << " remote " <<  from  << " local  " << to ;
+                   SetRemoteDescription(2, "offer", sSdp.c_str());
+                   CreateAnswer_cb(2,  [ to, from, this ]( string type, string sdp ) {
+
+                        SInfo <<  "Send  "  << type  << " " <<  sdp  << " remote " <<  from  << " local  " << to ;
 
                         sendSDP( type, sdp,   from  );
 
@@ -170,31 +172,34 @@ namespace SdpParse {
 
                 );
 
-                OnIce(1,
-                [ to, from , this]( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid ) {
-
-                    //SInfo <<  candidate  << " " <<  sdp_mline_index << " " << sdp_mid << " remote " <<  from  << " local  " << to ;
-
-                    sendICE( candidate, sdp_mline_index, sdp_mid,  from,  to  );
-
-                }
-                );
+//                OnIce(1,
+//                [ to, from , this]( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid ) {
+//
+//                    //SInfo <<  candidate  << " " <<  sdp_mline_index << " " << sdp_mid << " remote " <<  from  << " local  " << to ;
+//
+//                    sendICE( candidate, sdp_mline_index, sdp_mid,  from,  to  );
+//
+//                }
+//                );
 
             } else if (std::string("answer") == type) {
+
+                SInfo <<  "onanswer " ;
                // recvSDP(from, m["desc"]);
                 //rooms->on_consumer_answer( room, from, to, m["desc"] );
                 std::string sSdp  =  m["desc"]["sdp"].get<std::string>();
                 SetRemoteDescription(1, "answer", sSdp.c_str());
 
-                OnIce(1,
-                        [ to, from , this]( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid ) {
-
-                            //SInfo <<  candidate  << " " <<  sdp_mline_index << " " << sdp_mid << " remote " <<  from  << " local  " << to ;
-
-                            sendICE( candidate, sdp_mline_index, sdp_mid,  from,  to  );
-
-                        }
-                );
+                subscribe();
+//                OnIce(1,
+//                        [ to, from , this]( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid ) {
+//
+//                            //SInfo <<  candidate  << " " <<  sdp_mline_index << " " << sdp_mid << " remote " <<  from  << " local  " << to ;
+//
+//                            sendICE( candidate, sdp_mline_index, sdp_mid,  from,  to  );
+//
+//                        }
+//                );
 
             } else if (std::string("candidate") == type) {
                 recvCandidate(from, m);
@@ -205,6 +210,14 @@ namespace SdpParse {
         }
 
 
+
+        void Signaler::subscribe() {
+             json desc;
+             desc["type"] = "subscribe";
+             desc["room"] = room;
+
+             postMessage(desc);
+        }
 
         void Signaler::recvCandidate(const std::string& from, const json& data) {
 

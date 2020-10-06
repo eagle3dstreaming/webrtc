@@ -64,7 +64,8 @@ namespace SdpParse {
             //void onffer(std::string &room,  std::string& participant, const json &sdp);
            
             //void onPeerDiconnected(std::string &room,  std::string& peerID);
-            
+
+            void subscribe();
 
         protected:
 #if USE_SSL

@@ -42,7 +42,7 @@ ninja -C out/Android libwebrtc_unity
 # copy jar file to ~/webrtc
 cp out/Android/lib.java/examples/libwebrtc_unity.jar ../.
 
-#cp ../libjingle_peerconnection_so.so  /experiment/AugmentedReality/webrtc-ar-demo-socketio/Assets/Plugins/Android/libs/armeabi-v7a
+cp ../libjingle_peerconnection_so.so  /experiment/AugmentedReality/webrtc-ar-demo-socketio/Assets/Plugins/Android/libs/armeabi-v7a
 
 cd ..
 
