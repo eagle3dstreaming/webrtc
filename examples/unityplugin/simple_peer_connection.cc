@@ -20,6 +20,10 @@
 #include "api/create_peerconnection_factory.h"
 #include "media/engine/internal_decoder_factory.h"
 #include "media/engine/internal_encoder_factory.h"
+
+#include <api/video_codecs/builtin_video_encoder_factory.h>
+#include <api/video_codecs/builtin_video_decoder_factory.h>
+
 #include "media/engine/multiplex_codec_factory.h"
 #include "media/engine/multiplex_augment_only_codec_factory.h"
 
@@ -36,7 +40,6 @@
 #include <sdk/android/src/jni/video_encoder_factory_wrapper.h>
 #include <sdk/android/src/jni/video_decoder_factory_wrapper.h>
 #include <sdk/android/native_api/jni/scoped_java_ref.h>
-
 
 #endif
 
@@ -176,49 +179,72 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
 
        // Arind other codex also works Replace MultiplexAugmentOnlyEncoderFactory with    MultiplexEncoderFactory  , MultiplexAugmentOnlyDecoderFactory  MultiplexDecoderFactory
 
-       g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
-               g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
-            nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
-            webrtc::CreateBuiltinAudioDecoderFactory(),
+//       g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
+//               g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
+//            nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
+//            webrtc::CreateBuiltinAudioDecoderFactory(),
+//
+//            std::unique_ptr<webrtc::VideoEncoderFactory>(
+//                    new webrtc::MultiplexEncoderFactory(
+//                            absl::WrapUnique(CreateVideoEncoderFactory(env,   ( const webrtc::JavaRef<jobject>&) ME_obj )),
+//                            false ))
+//                    ,
+//            std::unique_ptr<webrtc::VideoDecoderFactory>(
+//                    new webrtc::MultiplexDecoderFactory(
+//                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) MD_obj)), false ))
+//                    ,
+//            nullptr, nullptr);
 
-            std::unique_ptr<webrtc::VideoEncoderFactory>(
-                    new webrtc::MultiplexEncoderFactory(
-                            absl::WrapUnique(CreateVideoEncoderFactory(env,   ( const webrtc::JavaRef<jobject>&) ME_obj )),
-                            false ))
-                    ,
-            std::unique_ptr<webrtc::VideoDecoderFactory>(
-                    new webrtc::MultiplexDecoderFactory(
-                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) MD_obj)), false ))
-                    ,
-            nullptr, nullptr);
+      g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
+              g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
+              nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
+              webrtc::CreateBuiltinAudioDecoderFactory(),
+
+              webrtc::CreateBuiltinVideoEncoderFactory(),
+
+              webrtc::CreateBuiltinVideoDecoderFactory(),
+
+              nullptr, nullptr);
 #else //for ios
 
-      std::unique_ptr<webrtc::VideoEncoderFactory> encoder_factory =
-              std::make_unique<webrtc::h264::H264VideoEncoderFactory>(
-                      []() {
-                                cricket::VideoCodec codec("H264");
-                                codec.SetParam("profile-level-id", "42e01f");
-                                codec.SetParam("level-asymmetry-allowed", "1");
-                                codec.SetParam("packetization-mode", "1");
-                                return webrtc::H264Encoder::Create(codec);
-                               } );
+//      std::unique_ptr<webrtc::VideoEncoderFactory> encoder_factory =
+//              std::make_unique<webrtc::h264::H264VideoEncoderFactory>(
+//                      []() {
+//                                cricket::VideoCodec codec("H264");
+//                                codec.SetParam("profile-level-id", "42e01f");
+//                                codec.SetParam("level-asymmetry-allowed", "1");
+//                                codec.SetParam("packetization-mode", "1");
+//                                return webrtc::H264Encoder::Create(codec);
+//                               } );
+//
+//
+//      std::unique_ptr<webrtc::VideoDecoderFactory> decoder_factory =
+//              std::make_unique<webrtc::h264::H264VideoDecoderFactory>(
+//                      []() { return webrtc::H264Decoder::Create(); });
+//
+//        g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
+//                g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
+//            nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
+//            webrtc::CreateBuiltinAudioDecoderFactory(),
+//            std::unique_ptr<webrtc::VideoEncoderFactory>(
+//                new webrtc::MultiplexEncoderFactory(
+//                        std::move(encoder_factory), false)),
+//            std::unique_ptr<webrtc::VideoDecoderFactory>(
+//                new webrtc::MultiplexDecoderFactory(
+//                        std::move(decoder_factory), false)),
+//            nullptr, nullptr);
 
+     g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
+              g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
+              nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
+              webrtc::CreateBuiltinAudioDecoderFactory(),
 
-      std::unique_ptr<webrtc::VideoDecoderFactory> decoder_factory =
-              std::make_unique<webrtc::h264::H264VideoDecoderFactory>(
-                      []() { return webrtc::H264Decoder::Create(); });
+              webrtc::CreateBuiltinVideoEncoderFactory(),
 
-        g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
-                g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
-            nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
-            webrtc::CreateBuiltinAudioDecoderFactory(),
-            std::unique_ptr<webrtc::VideoEncoderFactory>(
-                new webrtc::MultiplexEncoderFactory(
-                        std::move(encoder_factory), false)),
-            std::unique_ptr<webrtc::VideoDecoderFactory>(
-                new webrtc::MultiplexDecoderFactory(
-                        std::move(decoder_factory), false)),
-            nullptr, nullptr);
+              webrtc::CreateBuiltinVideoDecoderFactory(),
+
+              nullptr, nullptr);
+
 #endif
   }
   if (!g_peer_connection_factory.get()) {
@@ -236,6 +262,39 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
   return peer_connection_.get() != nullptr;
 }
 
+void SimplePeerConnection::OnIceConnectionChange(
+        webrtc::PeerConnectionInterface::IceConnectionState new_state)
+{
+    webrtc::PeerConnectionInterface::kIceConnectionNew;
+
+   switch(new_state) {
+       case webrtc::PeerConnectionInterface::kIceConnectionNew:
+
+           RTC_LOG(INFO) <<"kIceConnectionNew";
+       break;
+       case webrtc::PeerConnectionInterface::kIceConnectionChecking:
+           RTC_LOG(INFO) <<"kIceConnectionChecking";
+           break;
+       case  webrtc::PeerConnectionInterface::kIceConnectionConnected:
+           RTC_LOG(INFO) <<"kIceConnectionConnected";
+           break;
+       case  webrtc::PeerConnectionInterface::kIceConnectionCompleted:
+           RTC_LOG(INFO) <<"kIceConnectionCompleted";
+           break;
+       case webrtc::PeerConnectionInterface::kIceConnectionFailed:
+           RTC_LOG(INFO) <<"kIceConnectionFailed";
+           break;
+       case   webrtc::PeerConnectionInterface::kIceConnectionDisconnected:
+           RTC_LOG(INFO) <<"kIceConnectionDisconnected";
+           break;
+       case   webrtc::PeerConnectionInterface::kIceConnectionClosed:
+           RTC_LOG(INFO) <<"kIceConnectionClosed";
+           break;
+   };
+
+
+}
+
 bool SimplePeerConnection::CreatePeerConnection(const char** turn_urls,
                                                 const int no_of_urls,
                                                 const char* username,
@@ -246,6 +305,7 @@ bool SimplePeerConnection::CreatePeerConnection(const char** turn_urls,
   local_video_observer_.reset(new VideoObserver());
   remote_video_observer_.reset(new VideoObserver());
 
+  /*
   // Add the turn server.
   if (turn_urls != nullptr) {
     if (no_of_urls > 0) {
@@ -266,15 +326,25 @@ bool SimplePeerConnection::CreatePeerConnection(const char** turn_urls,
 
       config_.servers.push_back(turn_server);
     }
-  }
+  }*/
 
   // Add the stun server.
-  webrtc::PeerConnectionInterface::IceServer stun_server;
-  stun_server.uri = GetPeerConnectionString();
-  config_.servers.push_back(stun_server);
-  config_.enable_rtp_data_channel = true;
+  //webrtc::PeerConnectionInterface::IceServer stun_server;
+ // stun_server.uri = GetPeerConnectionString();
+ // config_.servers.push_back(stun_server);
+    config_.servers.clear();
+    config_.servers.empty();
+  config_.enable_rtp_data_channel = false;
   config_.enable_dtls_srtp = true;
   config_.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
+  config_.rtcp_mux_policy =  webrtc::PeerConnectionInterface::kRtcpMuxPolicyRequire;
+  config_.bundle_policy  =  webrtc::PeerConnectionInterface::kBundlePolicyMaxBundle;
+  config_.type = webrtc::PeerConnectionInterface::kAll;
+  config_.min_port =11501;
+  config_.max_port =12560;
+
+    //config_
+  //  config_.
 
   peer_connection_ = g_peer_connection_factory->CreatePeerConnection(
       config_, nullptr, nullptr, this);
@@ -357,6 +427,9 @@ void SimplePeerConnection::OnSuccess(
 
   std::string sdp;
   desc->ToString(&sdp);
+
+
+    RTC_LOG(INFO) << " offer :" << sdp;
 
   if( this->cbSdp )
   {

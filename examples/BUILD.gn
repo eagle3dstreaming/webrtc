@@ -802,6 +802,8 @@ if (is_win || is_android || is_linux) {
       "../api:media_stream_interface",
       "../api/audio_codecs:builtin_audio_decoder_factory",
       "../api/audio_codecs:builtin_audio_encoder_factory",
+      "../api/video_codecs:builtin_video_decoder_factory",
+      "../api/video_codecs:builtin_video_encoder_factory",
       "../api/video:video_frame",
       "../api/video:video_rtp_headers",
       "../media:rtc_audio_video",
