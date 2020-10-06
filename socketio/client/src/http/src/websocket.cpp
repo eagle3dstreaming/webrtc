@@ -505,7 +505,7 @@ namespace base {
                 if (l > limit)
                 {
                     
-                    LTrace( util::format("WebSocket error: Insufficient buffer for payload size %" PRIu64, l)); //, ErrorPayloadTooBig
+                   // LTrace( util::format("WebSocket error: Insufficient buffer for payload size %" PRIu64, l)); //, ErrorPayloadTooBig
                     return 0;
                 }
 		payloadLength = l;
