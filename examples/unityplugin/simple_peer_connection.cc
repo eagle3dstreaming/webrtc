@@ -302,8 +302,8 @@ bool SimplePeerConnection::CreatePeerConnection(const char** turn_urls,
   RTC_DCHECK(g_peer_connection_factory.get() != nullptr);
   RTC_DCHECK(peer_connection_.get() == nullptr);
 
-  local_video_observer_.reset(new VideoObserver());
-  remote_video_observer_.reset(new VideoObserver());
+  local_video_observer_.reset(new VideoObserver(0));
+  remote_video_observer_.reset(new VideoObserver(nClientID));
 
   /*
   // Add the turn server.

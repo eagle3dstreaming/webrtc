@@ -17,7 +17,7 @@
 #include <functional>
 
 // Definitions of callback functions.
-typedef void (*I420FRAMEREADY_CALLBACK)(const uint8_t* data_y,
+typedef void (*I420FRAMEREADY_CALLBACK)(int ClientID, const uint8_t* data_y,
                                         const uint8_t* data_u,
                                         const uint8_t* data_v,
                                         const uint8_t* data_a,

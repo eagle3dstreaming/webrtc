@@ -33,6 +33,8 @@ namespace SdpParse {
             
              std::mutex g_shutdown_mutex;
 
+
+
             // /// PeerManager interface
              
             // void sendCandidate(wrtc::Peer* conn, const std::string& mid, int mlineindex, const std::string& sdp) override;
@@ -67,7 +69,9 @@ namespace SdpParse {
 
             void subscribe();
 
-        protected:
+        public:
+
+            uv_async_t async;
 #if USE_SSL
             //  SocketioSecClient *client;
 #else
@@ -77,7 +81,7 @@ namespace SdpParse {
 #endif
 //            wrtc::MultiplexMediaCapturer _capturer;
 //            wrtc::PeerFactoryContext _context;
-
+        protected:
             //socket* socket{nullptr};
 
             bool isChannelReady{false};

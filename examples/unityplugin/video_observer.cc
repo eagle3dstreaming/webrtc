@@ -30,7 +30,7 @@ void VideoObserver::OnFrame(const webrtc::VideoFrame& frame) {
 
     rtc::scoped_refptr<webrtc::I420BufferInterface> i420_buffer =
             buffer->ToI420();
-    OnI420FrameReady(i420_buffer->DataY(), i420_buffer->DataU(),
+    OnI420FrameReady(nClientID, i420_buffer->DataY(), i420_buffer->DataU(),
                      i420_buffer->DataV(), augData, i420_buffer->StrideY(),
                      i420_buffer->StrideU(), i420_buffer->StrideV(), augSize,
                      frame.width(), frame.height());
@@ -39,7 +39,7 @@ void VideoObserver::OnFrame(const webrtc::VideoFrame& frame) {
   else if (buffer->type() != webrtc::VideoFrameBuffer::Type::kI420A) {
     rtc::scoped_refptr<webrtc::I420BufferInterface> i420_buffer =
         buffer->ToI420();
-    OnI420FrameReady(i420_buffer->DataY(), i420_buffer->DataU(),
+    OnI420FrameReady(nClientID,i420_buffer->DataY(), i420_buffer->DataU(),
                      i420_buffer->DataV(), nullptr, i420_buffer->StrideY(),
                      i420_buffer->StrideU(), i420_buffer->StrideV(), 0,
                      frame.width(), frame.height());
@@ -48,7 +48,7 @@ void VideoObserver::OnFrame(const webrtc::VideoFrame& frame) {
     // The buffer has alpha channel.
     const webrtc::I420ABufferInterface* i420a_buffer = buffer->GetI420A();
 
-    OnI420FrameReady(i420a_buffer->DataY(), i420a_buffer->DataU(),
+    OnI420FrameReady(nClientID,i420a_buffer->DataY(), i420a_buffer->DataU(),
                      i420a_buffer->DataV(), i420a_buffer->DataA(),
                      i420a_buffer->StrideY(), i420a_buffer->StrideU(),
                      i420a_buffer->StrideV(), i420a_buffer->StrideA(),

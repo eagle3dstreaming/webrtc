@@ -19,7 +19,7 @@
 
 class VideoObserver : public rtc::VideoSinkInterface<webrtc::VideoFrame> {
  public:
-  VideoObserver() {}
+  VideoObserver(int clinetId):nClientID(clinetId) {}
   ~VideoObserver() {}
   void SetVideoCallback(I420FRAMEREADY_CALLBACK callback);
 
@@ -30,6 +30,8 @@ class VideoObserver : public rtc::VideoSinkInterface<webrtc::VideoFrame> {
  private:
   I420FRAMEREADY_CALLBACK OnI420FrameReady = nullptr;
   std::mutex mutex;
+
+    int nClientID;
 };
 
 #endif  // EXAMPLES_UNITYPLUGIN_VIDEO_OBSERVER_H_

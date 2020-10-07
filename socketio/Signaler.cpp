@@ -23,7 +23,25 @@ namespace SdpParse {
         Signaler::~Signaler() {
 
         }
-        
+
+        static void async_cb_stop(uv_async_t* handle) {
+
+            LTrace(" Upload::async_cb_stop")
+
+
+            Signaler *p = ( Signaler *) handle->data;
+
+            p->client->close(0, "terminate");
+
+            delete  p->client;
+
+            uv_close((uv_handle_t*)&p->async, nullptr);
+
+            p->stop();
+
+            SInfo << "Upload::async_cb_stop over" ;
+
+        }
         
         void Signaler::shutdown() {
     
@@ -32,10 +50,11 @@ namespace SdpParse {
             if(!shuttingDown )
             {
                 shuttingDown =true;
+
+                int  r = uv_async_send(&async);
+                //client->close(0, "terminate");
                 
-                client->close(0, "terminate");
-                
-                delete client;
+                //delete client;
                 
             }
 
@@ -53,6 +72,9 @@ namespace SdpParse {
             Application app;
 
             connect(m_IP, m_port);
+
+            async.data = this;
+            int r = uv_async_init(app.uvGetLoop(), &async, async_cb_stop);
 
             app.run();
           
@@ -153,24 +175,28 @@ namespace SdpParse {
 
             if (std::string("offer") == type) {
                 //assert(0 && "offer not supported");
-
+                static int  rounRob = 0;
                 //std::string remotePeerID = from;
                 //onffer(room, from, m["desc"]);
                 //  rooms->on_producer_offer( room,  from, m["desc"] );
-                   std::string sSdp  =  m["desc"]["sdp"].get<std::string>();
+               std::string sSdp  =  m["desc"]["sdp"].get<std::string>();
 
-                   SInfo <<  "onoffer "  << sSdp ;
+               SInfo <<  "onoffer "  << sSdp ;
 
-                   SetRemoteDescription(2, "offer", sSdp.c_str());
-                   CreateAnswer_cb(2,  [ to, from, this ]( string type, string sdp ) {
+               SetRemoteDescription(2+rounRob, "offer", sSdp.c_str());
+               CreateAnswer_cb(2+rounRob,  [ to, from, this ]( string type, string sdp ) {
 
-                        SInfo <<  "Send  "  << type  << " " <<  sdp  << " remote " <<  from  << " local  " << to ;
+                    SInfo <<  "Send  "  << type  << " " <<  sdp  << " remote " <<  from  << " local  " << to ;
 
-                        sendSDP( type, sdp,   from  );
+                    sendSDP( type, sdp,   from  );
 
                     }
 
                 );
+
+               ++rounRob;
+               if(rounRob == 5)
+                   rounRob = 0;
 
 //                OnIce(1,
 //                [ to, from , this]( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid ) {
