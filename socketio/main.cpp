@@ -13,12 +13,12 @@ int main(int argc, char** argv) {
    
     sa::connect(ip, port,"room1", nullptr, 2, nullptr,nullptr,true);
 
-    usleep(900000000);
+    usleep(29900);
     std::cout << "Signal Client Terminating" << std::endl << std::flush;
     
 
     // hm::stop();
-    // std::cout << "stop done" << std::endl;
+   
 
     // usleep(900000);
 
@@ -31,6 +31,8 @@ int main(int argc, char** argv) {
     // std::cout << "second upload done" << std::endl;
 
      sa::stop();
+     
+     std::cout << "Signal Client Terminated" << std::endl << std::flush;
 
 
     return 0;

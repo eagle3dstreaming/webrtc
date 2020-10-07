@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <string>
+#include <uv.h>
 
 #include "base/logger.h"
 
@@ -21,6 +22,12 @@ namespace SdpParse {
         }
 
         Signaler::~Signaler() {
+            LTrace("~Signaler()");
+
+            if(client) {
+                delete client;
+                client = nullptr;
+            }
 
         }
 
@@ -28,12 +35,9 @@ namespace SdpParse {
 
             LTrace(" Upload::async_cb_stop")
 
-
             Signaler *p = ( Signaler *) handle->data;
 
             p->client->close(0, "terminate");
-
-            delete  p->client;
 
             uv_close((uv_handle_t*)&p->async, nullptr);
 
@@ -50,12 +54,10 @@ namespace SdpParse {
             if(!shuttingDown )
             {
                 shuttingDown =true;
-
+                
+                if(async.loop)
                 int  r = uv_async_send(&async);
-                //client->close(0, "terminate");
-                
-                //delete client;
-                
+
             }
 
         
@@ -228,7 +230,7 @@ namespace SdpParse {
 //                );
 
             } else if (std::string("candidate") == type) {
-                recvCandidate(from, m);
+               // recvCandidate(from, m);
             } else if (std::string("bye") == type) {
                // rooms->onDisconnect( from);
             } 
@@ -245,17 +247,17 @@ namespace SdpParse {
              postMessage(desc);
         }
 
-        void Signaler::recvCandidate(const std::string& from, const json& data) {
-
-            SInfo << "recvCandidate " << from << "  " << data["candidate"].get<std::string>() <<  " " << data["sdpMLineIndex"].get<int>()  << " " << data["sdpMid"].get<std::string>();
-
-            std::string candidate = data["candidate"].get<std::string>();
-            const int sdpMLineIndex= data["sdpMLineIndex"].get<int>();
-            const char* sdpMid= data["sdpMid"].get<std::string>().c_str();
-
-            AddIceCandidate( 1, candidate.c_str(), sdpMLineIndex, sdpMid);
-
-        }
+//        void Signaler::recvCandidate(const std::string& from, const json& data) {
+//
+//            SInfo << "recvCandidate " << from << "  " << data["candidate"].get<std::string>() <<  " " << data["sdpMLineIndex"].get<int>()  << " " << data["sdpMid"].get<std::string>();
+//
+//            std::string candidate = data["candidate"].get<std::string>();
+//            const int sdpMLineIndex= data["sdpMLineIndex"].get<int>();
+//            const char* sdpMid= data["sdpMid"].get<std::string>().c_str();
+//
+//            AddIceCandidate( 1, candidate.c_str(), sdpMLineIndex, sdpMid);
+//
+//        }
 
 
         //////////////////////////////////////////////////////////////////////////////////////
