@@ -87,8 +87,8 @@ namespace SdpParse {
             bool isChannelReady{false};
             bool isInitiator{false};
             bool isStarted{false};
-            
-            
+
+
             std::string m_IP;
             uint16_t m_port;
             

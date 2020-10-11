@@ -88,6 +88,10 @@ class SimplePeerConnection : public webrtc::PeerConnectionObserver,
   void OnAddStream(
       rtc::scoped_refptr<webrtc::MediaStreamInterface> stream) override;
 
+    virtual void OnTrack(
+            rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) override;
+
+
   void OnAddTrack(
             rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
             const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams)  override;
@@ -125,13 +129,13 @@ class SimplePeerConnection : public webrtc::PeerConnectionObserver,
  private:
   rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection_;
   rtc::scoped_refptr<webrtc::DataChannelInterface> data_channel_;
-  std::map<std::string, rtc::scoped_refptr<webrtc::MediaStreamInterface> >
-      active_streams_;
+ // std::map<std::string, rtc::scoped_refptr<webrtc::MediaStreamInterface> >
+  //    active_streams_;
 
   std::unique_ptr<VideoObserver> local_video_observer_;
-  std::unique_ptr<VideoObserver> remote_video_observer_;
+  std::unique_ptr<VideoObserver> remote_video_observer_[16];
 
-  webrtc::MediaStreamInterface* remote_stream_ = nullptr;
+//  webrtc::MediaStreamInterface* remote_stream_ = nullptr;
   webrtc::PeerConnectionInterface::RTCConfiguration config_;
 
   LOCALDATACHANNELREADY_CALLBACK OnLocalDataChannelReady = nullptr;

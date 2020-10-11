@@ -16,8 +16,8 @@ namespace sa {
   	void  connect(const char* signalip, const int signalport, const char* roomid, const char** turn_urls,
 					   const int no_of_urls,
 					   const char* username,
-					   const char* credential,
-					   bool mandatory_receive_video);
+					   const char* credential
+					  );
 
     void  stop( );
 

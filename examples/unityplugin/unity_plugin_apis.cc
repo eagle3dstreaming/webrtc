@@ -22,35 +22,32 @@ static std::map<int, rtc::scoped_refptr<SimplePeerConnection>>
     g_peer_connection_map;
 }  // namespace
 
-//static bool signalerLoaded= false;
-#define MaxClients 5
 
 int CreatePeerConnection(const char* ip, const int port, const char* roomid, const char** turn_urls,
                          const int no_of_urls,
                          const char* username,
-                         const char* credential,
-                         bool mandatory_receive_video) {
+                         const char* credential
+                          ) {
   g_peer_connection_map[g_peer_connection_id] =
       new rtc::RefCountedObject<SimplePeerConnection>(g_peer_connection_id);
 
 
     if (!g_peer_connection_map[g_peer_connection_id]->InitializePeerConnection(
-            turn_urls, no_of_urls, username, credential, mandatory_receive_video))
+            turn_urls, no_of_urls, username, credential, true))
         return -1;
 
-    for( int cl =1; cl <= MaxClients; cl++)
-    {
-        g_peer_connection_map[g_peer_connection_id + cl] =
-                new rtc::RefCountedObject<SimplePeerConnection>(g_peer_connection_id + cl);
-        if (!g_peer_connection_map[g_peer_connection_id + cl]->InitializePeerConnection(
-                turn_urls, no_of_urls, username, credential, mandatory_receive_video))
+
+    g_peer_connection_map[g_peer_connection_id + 1] =
+                new rtc::RefCountedObject<SimplePeerConnection>(g_peer_connection_id + 1);
+        if (!g_peer_connection_map[g_peer_connection_id + 1]->InitializePeerConnection(
+                turn_urls, no_of_urls, username, credential,true))
             return -1;
-    }
+
 
  // AddStream( 1, false) ;// arvind moved this code to c#
   if (g_peer_connection_id == 1)
   {
-      sa::connect(ip, port, roomid, turn_urls, no_of_urls, username, credential, mandatory_receive_video);
+      sa::connect(ip, port, roomid, turn_urls, no_of_urls, username, credential);
 
   }
 
@@ -64,18 +61,13 @@ bool ClosePeerConnection(int peer_connection_id) {
   g_peer_connection_map[peer_connection_id]->DeletePeerConnection();
   g_peer_connection_map.erase(peer_connection_id);
 
-  for( int cl =1; cl <= MaxClients; cl++)
-  {
-      g_peer_connection_map[peer_connection_id+cl]->DeletePeerConnection();
-      g_peer_connection_map.erase(peer_connection_id+cl);
-  }
 
+  g_peer_connection_map[peer_connection_id+1]->DeletePeerConnection();
+  g_peer_connection_map.erase(peer_connection_id+1);
 
-  g_peer_connection_id =1;
+  g_peer_connection_id = 1;
 
   sa::stop();
-
-
   return true;
 }
 
@@ -195,14 +187,12 @@ bool RegisterOnRemoteI420FrameReady(int peer_connection_id,
   if (!g_peer_connection_map.count(peer_connection_id))
     return false;
 
-  g_peer_connection_map[peer_connection_id]->RegisterOnRemoteI420FrameReady(
-      callback);
+//  g_peer_connection_map[peer_connection_id]->RegisterOnRemoteI420FrameReady(
+ //         g_callback);
 
-  for( int cl =1; cl <= MaxClients; cl++)
-  {
-      g_peer_connection_map[peer_connection_id+cl]->RegisterOnRemoteI420FrameReady(
-                callback);
-  }
+
+  g_peer_connection_map[peer_connection_id+1]->RegisterOnRemoteI420FrameReady(
+          callback);
 
   return true;
 }

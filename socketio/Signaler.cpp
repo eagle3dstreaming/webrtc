@@ -176,19 +176,26 @@ namespace SdpParse {
 
 
             if (std::string("offer") == type) {
-                //assert(0 && "offer not supported");
-                static int  rounRob = 0;
-                //std::string remotePeerID = from;
-                //onffer(room, from, m["desc"]);
-                //  rooms->on_producer_offer( room,  from, m["desc"] );
+
+
+
+
                std::string sSdp  =  m["desc"]["sdp"].get<std::string>();
 
-               SInfo <<  "onoffer "  << sSdp ;
+              // SInfo <<  "onoffer "  << sSdp ;
 
-               SetRemoteDescription(2+rounRob, "offer", sSdp.c_str());
-               CreateAnswer_cb(2+rounRob,  [ to, from, this ]( string type, string sdp ) {
+              //  CreatePeerConnection(m_IP.c_str(),m_port,room.c_str(), nullptr, 0,
+              //                                         nullptr,nullptr );
 
-                    SInfo <<  "Send  "  << type  << " " <<  sdp  << " remote " <<  from  << " local  " << to ;
+                SInfo <<  "onoffer  "  ;
+
+                //RegisterOnRemoteI420FrameReady( 2, nullptr);
+
+                SetRemoteDescription(2, "offer", sSdp.c_str());
+
+                CreateAnswer_cb(2,  [ to, from, this ]( string type, string sdp ) {
+
+                    SInfo <<  "Sending " << type    << " remote " <<  from  << " local  " << to ;
 
                     sendSDP( type, sdp,   from  );
 
@@ -196,9 +203,8 @@ namespace SdpParse {
 
                 );
 
-               ++rounRob;
-               if(rounRob == 5)
-                   rounRob = 0;
+             //  ++rounRobClientID;
+
 
 //                OnIce(1,
 //                [ to, from , this]( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid ) {
@@ -311,6 +317,7 @@ namespace SdpParse {
                     isChannelReady = true;
                     isInitiator = true;
                    // maybeStart();
+                    subscribe();
 
                 }));
 
