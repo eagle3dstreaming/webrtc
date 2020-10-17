@@ -12,6 +12,8 @@ package org.webrtc;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
+import org.webrtc.DefaultVideoEncoderFactory;
+import org.webrtc.DefaultVideoDecoderFactory;
 
 /*
 import java.nio.ByteBuffer;
@@ -24,6 +26,8 @@ public class UnityUtility {
   private static final String VIDEO_CAPTURER_THREAD_NAME = "VideoCapturerThread";
 
   private static final boolean ENABLE_H264_HIGH_PROFILE = false;
+
+  private static EglBase rootEglBase = EglBase.create();;
 
   public static SurfaceTextureHelper LoadSurfaceTextureHelper() {
     final SurfaceTextureHelper surfaceTextureHelper =
@@ -163,7 +167,23 @@ public class UnityUtility {
         return decoderFactory;
     }
 
-/*
+  public static VideoEncoderFactory  DefaultVideoEncoderFactory(  )
+  {
+      VideoEncoderFactory encoderFactory =  new DefaultVideoEncoderFactory(
+              rootEglBase.getEglBaseContext(),  /* enableIntelVp8Encoder */true,  /* enableH264HighProfile */false);
+      return encoderFactory;
+  }
+
+  public static VideoDecoderFactory  DefaultVideoDecoderFactory(  )
+  {
+
+     VideoDecoderFactory decoderFactory = new DefaultVideoDecoderFactory(rootEglBase.getEglBaseContext());
+     return decoderFactory;
+  }
+
+
+
+  /*
   public static VideoCapturer LinkCamera(
       long nativeTrackSource, SurfaceTextureHelper surfaceTextureHelper) {
     VideoCapturer capturer = new MyVideoCapturer();

@@ -32,6 +32,8 @@
 
 //#include "pc/test/fake_rtc_certificate_generator.h"
 
+#define MULTIPLEX_CODEX
+
 #if defined(WEBRTC_ANDROID)
 #include "examples/unityplugin/class_reference_holder.h"
 #include "modules/utility/include/helpers_android.h"
@@ -163,6 +165,8 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
       JNIEnv* env = webrtc::jni::GetEnv();
       jclass pc_factory_class =
                   unity_plugin::FindClass(env, "org/webrtc/UnityUtility");
+
+      #ifdef MULTIPLEX_CODEX
       jmethodID ME = webrtc::GetStaticMethodID(
                   env, pc_factory_class, "MultiplexH264Encoder", "()Lorg/webrtc/VideoEncoderFactory;");
       jobject ME_obj = env->CallStaticObjectMethod( pc_factory_class, ME);
@@ -179,24 +183,88 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
           RTC_DCHECK(ME_obj != nullptr)
               << "Cannot get VideoEncoderFactory.";
 
-       // Arind other codex also works Replace MultiplexAugmentOnlyEncoderFactory with    MultiplexEncoderFactory  , MultiplexAugmentOnlyDecoderFactory  MultiplexDecoderFactory
+      //  Arind other codex also works Replace MultiplexAugmentOnlyEncoderFactory with    MultiplexEncoderFactory  , MultiplexAugmentOnlyDecoderFactory  MultiplexDecoderFactory
 
-//       g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
-//               g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
-//            nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
-//            webrtc::CreateBuiltinAudioDecoderFactory(),
-//
-//            std::unique_ptr<webrtc::VideoEncoderFactory>(
-//                    new webrtc::MultiplexEncoderFactory(
-//                            absl::WrapUnique(CreateVideoEncoderFactory(env,   ( const webrtc::JavaRef<jobject>&) ME_obj )),
-//                            false ))
-//                    ,
-//            std::unique_ptr<webrtc::VideoDecoderFactory>(
-//                    new webrtc::MultiplexDecoderFactory(
-//                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) MD_obj)), false ))
-//                    ,
-//            nullptr, nullptr);
+       g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
+               g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
+            nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
+            webrtc::CreateBuiltinAudioDecoderFactory(),
 
+            std::unique_ptr<webrtc::VideoEncoderFactory>(
+                    new webrtc::MultiplexEncoderFactory(
+                            absl::WrapUnique(CreateVideoEncoderFactory(env,   ( const webrtc::JavaRef<jobject>&) ME_obj )),
+                            false ))
+                    ,
+            std::unique_ptr<webrtc::VideoDecoderFactory>(
+                    new webrtc::MultiplexDecoderFactory(
+                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) MD_obj)), false ))
+                    ,
+            nullptr, nullptr);
+       #else
+
+/************************************************************************************************************
+ * defualt fatcor
+*************************************************************************************************************/
+
+      jmethodID defaultME = webrtc::GetStaticMethodID(
+                  env, pc_factory_class, "DefaultVideoEncoderFactory", "()Lorg/webrtc/VideoEncoderFactory;");
+      jobject defaultME_obj = env->CallStaticObjectMethod( pc_factory_class, defaultME);
+
+
+      jmethodID defaultMD = webrtc::GetStaticMethodID(
+                env, pc_factory_class, "DefaultVideoDecoderFactory", "()Lorg/webrtc/VideoDecoderFactory;");
+      jobject defaultMD_obj = env->CallStaticObjectMethod( pc_factory_class, defaultMD);
+
+
+      CHECK_EXCEPTION(env);
+          RTC_DCHECK(defaultME != nullptr)
+
+              << "Cannot get VideoEncoderFactory.";
+       g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
+               g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
+            nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
+            webrtc::CreateBuiltinAudioDecoderFactory(),
+
+            std::unique_ptr<webrtc::VideoEncoderFactory>(
+                            absl::WrapUnique(CreateVideoEncoderFactory(env,  ( const webrtc::JavaRef<jobject>&) defaultME_obj)))
+                    ,
+            std::unique_ptr<webrtc::VideoDecoderFactory>(
+                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) defaultMD_obj)))
+                    ,
+            nullptr, nullptr);
+      #endif
+
+
+#else //for ios
+      #ifdef MULTIPLEX_CODEX
+
+      std::unique_ptr<webrtc::VideoEncoderFactory> encoder_factory =
+              std::make_unique<webrtc::h264::H264VideoEncoderFactory>(
+                      []() {
+                                cricket::VideoCodec codec("H264");
+                                codec.SetParam("profile-level-id", "42e01f");
+                                codec.SetParam("level-asymmetry-allowed", "1");
+                                codec.SetParam("packetization-mode", "1");
+                                return webrtc::H264Encoder::Create(codec);
+                               } );
+
+
+      std::unique_ptr<webrtc::VideoDecoderFactory> decoder_factory =
+              std::make_unique<webrtc::h264::H264VideoDecoderFactory>(
+                      []() { return webrtc::H264Decoder::Create(); });
+
+        g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
+                g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
+            nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
+            webrtc::CreateBuiltinAudioDecoderFactory(),
+            std::unique_ptr<webrtc::VideoEncoderFactory>(
+                new webrtc::MultiplexEncoderFactory(
+                        std::move(encoder_factory), false)),
+            std::unique_ptr<webrtc::VideoDecoderFactory>(
+                new webrtc::MultiplexDecoderFactory(
+                        std::move(decoder_factory), false)),
+            nullptr, nullptr);
+      #else
       g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
               g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
               nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
@@ -207,45 +275,7 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
               webrtc::CreateBuiltinVideoDecoderFactory(),
 
               nullptr, nullptr);
-#else //for ios
-
-//      std::unique_ptr<webrtc::VideoEncoderFactory> encoder_factory =
-//              std::make_unique<webrtc::h264::H264VideoEncoderFactory>(
-//                      []() {
-//                                cricket::VideoCodec codec("H264");
-//                                codec.SetParam("profile-level-id", "42e01f");
-//                                codec.SetParam("level-asymmetry-allowed", "1");
-//                                codec.SetParam("packetization-mode", "1");
-//                                return webrtc::H264Encoder::Create(codec);
-//                               } );
-//
-//
-//      std::unique_ptr<webrtc::VideoDecoderFactory> decoder_factory =
-//              std::make_unique<webrtc::h264::H264VideoDecoderFactory>(
-//                      []() { return webrtc::H264Decoder::Create(); });
-//
-//        g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
-//                g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
-//            nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
-//            webrtc::CreateBuiltinAudioDecoderFactory(),
-//            std::unique_ptr<webrtc::VideoEncoderFactory>(
-//                new webrtc::MultiplexEncoderFactory(
-//                        std::move(encoder_factory), false)),
-//            std::unique_ptr<webrtc::VideoDecoderFactory>(
-//                new webrtc::MultiplexDecoderFactory(
-//                        std::move(decoder_factory), false)),
-//            nullptr, nullptr);
-
-     g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
-              g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
-              nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
-              webrtc::CreateBuiltinAudioDecoderFactory(),
-
-              webrtc::CreateBuiltinVideoEncoderFactory(),
-
-              webrtc::CreateBuiltinVideoDecoderFactory(),
-
-              nullptr, nullptr);
+      #endif
 
 #endif
   }
@@ -652,29 +682,26 @@ void SimplePeerConnection::OnAddStream(
  void SimplePeerConnection::OnTrack(
         rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver) {
 
-     RTC_LOG(INFO)  << "OnAddTrack3 " ;//<<  transceiver->mid();
 
-
-     const char * pMid  = transceiver->mid()->c_str();
-     int iMid = atoi(pMid);
+    const char * pMid  = transceiver->mid()->c_str();
+    int iMid = atoi(pMid);
+    RTC_LOG(INFO)  << "OnAddTrack " <<  " mid "  << pMid;
     if(  transceiver->current_direction() !=  webrtc::RtpTransceiverDirection::kInactive &&    transceiver->direction() !=  webrtc::RtpTransceiverDirection::kInactive  )
     {
 
         rtc::scoped_refptr<webrtc::MediaStreamTrackInterface> track =
                 transceiver->receiver()->track();
-        RTC_LOG(INFO)  << "OnAddTrack " << track->id() <<  " kind " << track->kind()   <<  " mid"  << pMid;
+        RTC_LOG(INFO)  << "OnAddTrack " << track->id() <<  " kind " << track->kind() ;
 
-        if (track && remote_video_observer_[iMid] &&
+        if (track && remote_video_observer_[0] &&
             track->kind() == webrtc::MediaStreamTrackInterface::kVideoKind) {
             static_cast<webrtc::VideoTrackInterface*>(track.get())
-                    ->AddOrUpdateSink(remote_video_observer_[iMid].get(), rtc::VideoSinkWants());
+                    ->AddOrUpdateSink(remote_video_observer_[0].get(), rtc::VideoSinkWants());
             RTC_LOG(LS_INFO) << "Remote video sink set up: " << track;
 
         }
 
-
     }
-
 
  }
 
@@ -682,8 +709,8 @@ void SimplePeerConnection::OnAddStream(
         rtc::scoped_refptr<webrtc::RtpReceiverInterface> receiver,
         const std::vector<rtc::scoped_refptr<webrtc::MediaStreamInterface>>& streams) {
 
-
-   // SetAudioControl();
+     RTC_LOG(INFO)  << "OnAddTrack3" ;
+     // SetAudioControl();
 }
 
 
