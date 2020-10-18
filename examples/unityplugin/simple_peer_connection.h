@@ -35,6 +35,8 @@ class SimplePeerConnection : public webrtc::PeerConnectionObserver,
                                 const char* username,
                                 const char* credential,
                                 bool is_receiver);
+
+  std::string random_string();
   void DeletePeerConnection();
   void AddStreams(bool audio_only);
   bool CreateDataChannel();

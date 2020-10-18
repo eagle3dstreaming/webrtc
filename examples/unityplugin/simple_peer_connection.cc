@@ -30,6 +30,9 @@
 #include "modules/audio_device/include/audio_device.h"
 #include "modules/audio_processing/include/audio_processing.h"
 
+#include <random>
+
+
 //#include "pc/test/fake_rtc_certificate_generator.h"
 
 #define MULTIPLEX_CODEX
@@ -168,13 +171,13 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
 
       #ifdef MULTIPLEX_CODEX
       jmethodID ME = webrtc::GetStaticMethodID(
-                  env, pc_factory_class, "MultiplexH264Encoder", "()Lorg/webrtc/VideoEncoderFactory;");
+                  env, pc_factory_class, "DefaultVideoEncoderFactory", "()Lorg/webrtc/VideoEncoderFactory;");
       jobject ME_obj = env->CallStaticObjectMethod( pc_factory_class, ME);
 
 
 
       jmethodID MD = webrtc::GetStaticMethodID(
-                env, pc_factory_class, "MultiplexH264Decoder", "()Lorg/webrtc/VideoDecoderFactory;");
+                env, pc_factory_class, "DefaultVideoDecoderFactory", "()Lorg/webrtc/VideoDecoderFactory;");
       jobject MD_obj = env->CallStaticObjectMethod( pc_factory_class, MD);
 
 
@@ -191,12 +194,12 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
             webrtc::CreateBuiltinAudioDecoderFactory(),
 
             std::unique_ptr<webrtc::VideoEncoderFactory>(
-                    new webrtc::MultiplexEncoderFactory(
+                    new webrtc::MultiplexAugmentOnlyEncoderFactory(
                             absl::WrapUnique(CreateVideoEncoderFactory(env,   ( const webrtc::JavaRef<jobject>&) ME_obj )),
                             false ))
                     ,
             std::unique_ptr<webrtc::VideoDecoderFactory>(
-                    new webrtc::MultiplexDecoderFactory(
+                    new webrtc::MultiplexAugmentOnlyDecoderFactory(
                             absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) MD_obj)), false ))
                     ,
             nullptr, nullptr);
@@ -258,10 +261,10 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
             nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
             webrtc::CreateBuiltinAudioDecoderFactory(),
             std::unique_ptr<webrtc::VideoEncoderFactory>(
-                new webrtc::MultiplexEncoderFactory(
+                new webrtc::MultiplexAugmentOnlyEncoderFactory(
                         std::move(encoder_factory), false)),
             std::unique_ptr<webrtc::VideoDecoderFactory>(
-                new webrtc::MultiplexDecoderFactory(
+                new webrtc::MultiplexAugmentOnlyDecoderFactory(
                         std::move(decoder_factory), false)),
             nullptr, nullptr);
       #else
@@ -468,6 +471,20 @@ bool SimplePeerConnection::CreateAnswer(std::function<void( const std::string& t
   return true;
 }
 
+
+
+std::string SimplePeerConnection::random_string()
+{
+    std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+
+    std::random_device rd;
+    std::mt19937 generator(rd());
+
+    std::shuffle(str.begin(), str.end(), generator);
+
+    return str.substr(0, 8);    // assumes 32 < number of characters in str
+}
+
 void SimplePeerConnection::OnIce(std::function<void( const std::string& candidate, const int sdp_mline_index, const std::string& sdp_mid)> fIce) {
     if (!peer_connection_.get())
         return ;
@@ -485,7 +502,7 @@ void SimplePeerConnection::OnSuccess(
   desc->ToString(&sdp);
 
 
-    RTC_LOG(INFO) << desc->type() <<"  : " << sdp;
+  RTC_LOG(INFO) << desc->type() <<"  : " << sdp;
 
   if( this->cbSdp )
   {
@@ -537,7 +554,6 @@ void SimplePeerConnection::RegisterOnRemoteI420FrameReady(
         if (remote_video_observer_[x])
             remote_video_observer_[x]->SetVideoCallback(callback);
     }
-
 
 }
 
@@ -718,6 +734,9 @@ void SimplePeerConnection::AddStreams(bool audio_only) {
 //  if (active_streams_.find(kStreamId) != active_streams_.end())
 //    return;  // Already added.
 
+
+
+
     if (!peer_connection_->GetSenders().empty()) {
         return;  // Already added tracks.
     }
@@ -725,14 +744,20 @@ void SimplePeerConnection::AddStreams(bool audio_only) {
 //  rtc::scoped_refptr<webrtc::MediaStreamInterface> stream =
 //      g_peer_connection_factory->CreateLocalMediaStream(kStreamId);
 
+  std::string rnd=   random_string();
+
+  std::string audioLable = kAudioLabel + rnd;
+  std::string videoLable = kVideoLabel + rnd;
+  std::string streamId =  kStreamId + rnd;
+
   rtc::scoped_refptr<webrtc::AudioTrackInterface> audio_track(
       g_peer_connection_factory->CreateAudioTrack(
-          kAudioLabel, g_peer_connection_factory->CreateAudioSource(
+              audioLable, g_peer_connection_factory->CreateAudioSource(
                            cricket::AudioOptions())));
   std::string id = audio_track->id();
   //stream->AddTrack(audio_track);
   // peer_connection_->AddTransceiver(audio_track);
-    peer_connection_->AddTrack(audio_track, {kStreamId});
+    peer_connection_->AddTrack(audio_track, {streamId});
 
   if (!audio_only) {
 #if defined(WEBRTC_ANDROIDNOT)
@@ -764,12 +789,12 @@ void SimplePeerConnection::AddStreams(bool audio_only) {
     g_camera = (jobject)env->NewGlobalRef(camera_tmp);
 
     rtc::scoped_refptr<webrtc::VideoTrackInterface> video_track(
-        g_peer_connection_factory->CreateVideoTrack(kVideoLabel,
+        g_peer_connection_factory->CreateVideoTrack(videoLable,
                                                     source.release()));
    // stream->AddTrack(video_track);
 
     video_track->set_enabled(true);
-    peer_connection_->AddTrack(video_track, {kStreamId});
+    peer_connection_->AddTrack(video_track, {streamId});
 
     if (local_video_observer_) {
             video_track->AddOrUpdateSink(local_video_observer_.get(),
@@ -782,13 +807,13 @@ void SimplePeerConnection::AddStreams(bool audio_only) {
 
     if (video_device) {
       rtc::scoped_refptr<webrtc::VideoTrackInterface> video_track(
-          g_peer_connection_factory->CreateVideoTrack(kVideoLabel,
+          g_peer_connection_factory->CreateVideoTrack(videoLable,
                                                       video_device));
 
       //stream->AddTrack(video_track);
 
       video_track->set_enabled(true);
-      peer_connection_->AddTrack(video_track, {kStreamId});
+      peer_connection_->AddTrack(video_track, {streamId});
 
       if (local_video_observer_) {
             video_track->AddOrUpdateSink(local_video_observer_.get(),
