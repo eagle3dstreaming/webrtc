@@ -6,7 +6,11 @@
 #include "base/logger.h"
 
 #include "Signaler.h"
+
+#ifndef SHAREDLIB
 #include "../examples/unityplugin/unity_plugin_apis.h"
+#endif
+
 
 using std::endl;
 
@@ -15,7 +19,7 @@ namespace SdpParse {
 
         Signaler::Signaler(const std::string ip, const uint16_t port, const std::string roomid ) : m_IP(ip), m_port(port),shuttingDown(false)
         {
-            room = "foo";//roomid;
+            room = roomid;
            // Logger::instance().add(new ConsoleChannel("debug", Level::Trace));
             Logger::instance().add(new ConsoleChannel("debug", Level::Trace));
 
@@ -188,9 +192,11 @@ namespace SdpParse {
               //                                         nullptr,nullptr );
 
                 SInfo <<  "onoffer  "  ;
+                OnUnityMessage("onoffer");
 
                 //RegisterOnRemoteI420FrameReady( 2, nullptr);
 
+                #ifndef SHAREDLIB
                 SetRemoteDescription(2, "offer", sSdp.c_str());
 
                 CreateAnswer_cb(2,  [ to, from, this ]( string type, string sdp ) {
@@ -202,6 +208,16 @@ namespace SdpParse {
                     }
 
                 );
+
+                #else
+
+                 if (OnLocalSdpReady)
+                 {
+                     OnUnityMessage(sSdp.c_str());
+                    OnLocalSdpReady("offer", sSdp.c_str());
+                  }
+
+                #endif
 
              //  ++rounRobClientID;
 
@@ -219,10 +235,28 @@ namespace SdpParse {
             } else if (std::string("answer") == type) {
 
                 SInfo <<  "onanswer " ;
+
+                OnUnityMessage("onanswer");
+
                // recvSDP(from, m["desc"]);
                 //rooms->on_consumer_answer( room, from, to, m["desc"] );
                 std::string sSdp  =  m["desc"]["sdp"].get<std::string>();
+
+                #ifndef SHAREDLIB
                 SetRemoteDescription(1, "answer", sSdp.c_str());
+                
+                #else
+
+                 if (OnLocalSdpReady)
+                 {
+                     SInfo <<  "onanswer1 " <<  sSdp;
+
+                     OnUnityMessage(sSdp.c_str());
+
+                    OnLocalSdpReady("answer", sSdp.c_str());
+                 }
+
+                #endif
 
                 subscribe();
 //                OnIce(1,
@@ -243,7 +277,11 @@ namespace SdpParse {
 
         }
 
-
+        void Signaler::OnUnityMessage(std::string msg)
+        {
+           if( OnMessage)
+                OnMessage(msg.c_str());
+        }   
 
         void Signaler::subscribe() {
              json desc;
@@ -264,6 +302,16 @@ namespace SdpParse {
 //            AddIceCandidate( 1, candidate.c_str(), sdpMLineIndex, sdpMid);
 //
 //        }
+
+        void Signaler::RegisterOnLocalSdpReadytoSend(LOCALSDPREADYTOSEND_CALLBACK callback) {
+            SInfo <<  "RegisterOnLocalSdpReadytoSend" ;
+            OnLocalSdpReady  = callback;
+      
+        }
+
+        void Signaler::RegisterOnMessage(MESSAGE_CALLBACK callback) {
+          OnMessage = callback;
+        }
 
 
         //////////////////////////////////////////////////////////////////////////////////////

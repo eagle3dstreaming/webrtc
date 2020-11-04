@@ -1,16 +1,8 @@
-/*
- *  Copyright (c) 2017 The WebRTC project authors. All Rights Reserved.
- *
- *  Use of this source code is governed by a BSD-style license
- *  that can be found in the LICENSE file in the root of the source
- *  tree. An additional intellectual property rights grant can be found
- *  in the file PATENTS.  All contributing project authors may
- *  be found in the AUTHORS file in the root of the source tree.
- */
 
 #ifndef EXAMPLES_UNITYPLUGIN_VIDEO_OBSERVER_H_
 #define EXAMPLES_UNITYPLUGIN_VIDEO_OBSERVER_H_
 
+//#define DEBUG_ONFRAME
 #include <mutex>
 
 #include "api/media_stream_interface.h"
@@ -19,7 +11,11 @@
 
 class VideoObserver : public rtc::VideoSinkInterface<webrtc::VideoFrame> {
  public:
-  VideoObserver(int clinetId):nClientID(clinetId) {}
+  VideoObserver(int clinetId):nClientID(clinetId) {
+#if DEBUG_ONFRAME
+    nCount =0;
+#endif
+  }
   ~VideoObserver() {}
   void SetVideoCallback(I420FRAMEREADY_CALLBACK callback);
 
@@ -32,6 +28,9 @@ class VideoObserver : public rtc::VideoSinkInterface<webrtc::VideoFrame> {
   std::mutex mutex;
 
     int nClientID;
+#if DEBUG_ONFRAME
+    int nCount;
+#endif
 };
 
 #endif  // EXAMPLES_UNITYPLUGIN_VIDEO_OBSERVER_H_

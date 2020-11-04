@@ -11,17 +11,35 @@
 #include <modules/video_coding/codecs/multiplex/include/augmented_video_frame_buffer.h>
 #include "examples/unityplugin/video_observer.h"
 
+#if DEBUG_ONFRAME
+#include "rtc_base/logging.h"
+#endif
+
 void VideoObserver::SetVideoCallback(I420FRAMEREADY_CALLBACK callback) {
   std::lock_guard<std::mutex> lock(mutex);
+
+#if DEBUG_ONFRAME
+  RTC_LOG(INFO) <<"SetVideoCallback " <<  nClientID;
+  RTC_LOG(INFO) <<"SetVideoCallback " <<  (int)callback;
+#endif
+
   OnI420FrameReady = callback;
 }
 
 void VideoObserver::OnFrame(const webrtc::VideoFrame& frame) {
+
+
   std::unique_lock<std::mutex> lock(mutex);
   if (!OnI420FrameReady)
     return;
 
-  rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer(
+#if DEBUG_ONFRAME
+  if(nCount %25 == 0 && nClientID > 1 )
+    RTC_LOG(INFO) <<"clientID " <<  nClientID;
+#endif
+
+
+    rtc::scoped_refptr<webrtc::VideoFrameBuffer> buffer(
       frame.video_frame_buffer());
   if(buffer->type() == webrtc::VideoFrameBuffer::Type::kAugmented ) {
 

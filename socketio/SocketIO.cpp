@@ -48,15 +48,20 @@ namespace sa {
     }
 
 
-
-
-    void createoffer( const std::string& type, const std::string& sdp)
+    void sendSDP(const char* type, const char* sdp   )
     {
         SInfo <<  type ;
-
         thread->sendSDP (type , sdp,"");
-
     }
+
+
+    // void createoffer( const std::string& type, const std::string& sdp)
+    // {
+    //     SInfo <<  type ;
+
+    //     thread->sendSDP (type , sdp,"");
+
+    // }
 
 
     void  stop( )
@@ -75,7 +80,20 @@ namespace sa {
     }
 
 
+   bool RegisterOnLocalSdpReadytoSend(LOCALSDPREADYTOSEND_CALLBACK callback) 
+   {
+  
+      thread->RegisterOnLocalSdpReadytoSend( callback);
 
+      return true;
+   }
+
+   bool RegisterOnMessage(MESSAGE_CALLBACK callback)
+   {
+     thread->RegisterOnMessage( callback);
+
+      return true;
+   }
    
 
 }// end hm

@@ -1,6 +1,6 @@
 
 #include "SocketIO.h"
-#include <unistd.h>
+#include "base/platform.h"
 #include <iostream>
 
  const char ip[] = "192.168.0.16";
@@ -11,15 +11,15 @@ int main(int argc, char** argv) {
 
 //    sa::stop();
    
-    sa::connect(ip, port,"room1", nullptr, 2, nullptr,nullptr,true);
+    sa::connect(ip, port,"room1", nullptr, 2, nullptr,nullptr);
 
-    usleep(29900);
+    base::sleep(1000);
     std::cout << "Signal Client Terminating" << std::endl << std::flush;
     
 
     // hm::stop();
    
-
+      base::sleep(1);
     // usleep(900000);
 
     // std::cout << "second upload start" << std::endl;

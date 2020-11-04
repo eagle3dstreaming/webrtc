@@ -425,10 +425,10 @@ void SimplePeerConnection::DeletePeerConnection() {
 #endif
 
   CloseDataChannel();
-  peer_connection_->Close();
+ // peer_connection_->Close();   // coredumps
 
 
-  peer_connection_.release();
+ // peer_connection_.release(); // coredumps
 
   peer_connection_ = nullptr;
   //active_streams_.clear();

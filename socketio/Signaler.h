@@ -8,6 +8,11 @@
 
 using namespace base::sockio;
 
+typedef void (*LOCALSDPREADYTOSEND_CALLBACK)(const char* type, const char* sdp);
+
+typedef void (*MESSAGE_CALLBACK)(const char* msg);
+
+
 namespace base {
 namespace SdpParse {
 
@@ -22,8 +27,6 @@ namespace SdpParse {
 
             void connect(const std::string& host, const uint16_t port);
             
-          
-
             
             void run() ;
             
@@ -94,9 +97,17 @@ namespace SdpParse {
             
             std::string room;
             
-            
             bool shuttingDown;
-            
+
+        public:
+
+            void RegisterOnLocalSdpReadytoSend(LOCALSDPREADYTOSEND_CALLBACK callback) ;
+            void RegisterOnMessage(MESSAGE_CALLBACK callback);
+        private:
+             void OnUnityMessage(std::string msg);
+   
+            LOCALSDPREADYTOSEND_CALLBACK OnLocalSdpReady = nullptr;
+            MESSAGE_CALLBACK OnMessage = nullptr;
 
         };
 

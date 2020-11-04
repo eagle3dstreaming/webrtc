@@ -6,8 +6,9 @@
 #define SA_SOCKETIO_H
 
 
-#include <string>
 
+typedef void (*LOCALSDPREADYTOSEND_CALLBACK)(const char* type, const char* sdp);
+typedef void (*MESSAGE_CALLBACK)(const char* msg);
 
 namespace sa {
 
@@ -19,14 +20,15 @@ namespace sa {
 					   const char* credential
 					  );
 
-    void  stop( );
+    	void  stop( );
 
 
-	void createoffer( const std::string& type, const std::string& sdp);
+	//void createoffer( const std::string& type, const std::string& sdp);
     
+	 void sendSDP(const char* type, const char* sdp   );
 
-    
- 
+	 bool RegisterOnLocalSdpReadytoSend(LOCALSDPREADYTOSEND_CALLBACK callback);
+	 bool RegisterOnMessage(MESSAGE_CALLBACK callback);
 
 }// end sa
 

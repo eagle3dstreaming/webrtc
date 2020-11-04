@@ -96,7 +96,7 @@ bool CreateOffer(int peer_connection_id) {
 
             [](  const std::string& type, const std::string& sdp)
               {
-                  sa::createoffer( type, sdp );
+                  sa::sendSDP( type.c_str(), sdp.c_str() );
               }
 
             );

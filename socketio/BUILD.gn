@@ -72,7 +72,7 @@ config("socketio_private_config") {
 
   # Note: Do not add any defines or include_dirs to this target, those should all
   # go in the opus_private_config so they can be shared with intrinsic targets.
-  static_library("socketio") {
+  source_set("socketioset") {
  
     include_dirs = [ 
 
@@ -92,8 +92,6 @@ config("socketio_private_config") {
 
 
     sources = [
-    "Signaler.cpp",
-    "Signaler.h",
     "SocketIO.h",
     "SocketIO.cpp",
     "client/src/base/include/base/buffer.h",
@@ -353,7 +351,8 @@ config("socketio_private_config") {
     }
 
 
-   executable("testme") {
+
+  executable("testme") {
     sources = [
       # sources
       "main.cpp",
@@ -366,6 +365,57 @@ config("socketio_private_config") {
     if (is_linux) {
       cflags = [ "-fexceptions" ]
     }
+
+      if (is_win) {
+    libs = [
+      "iphlpapi.lib",
+    ]
+    }
+  }
+
+
+  static_library("socketio") {
+ 
+    sources = [
+    "Signaler.cpp",
+    "Signaler.h",
+    ]
+    deps = [
+      ":socketioset",
+    ]
+   }
+
+   shared_library("signaler") {
+    sources = [
+      # sources
+      "SignalerAPI.cpp",
+      "SignalerAPI.h",
+      "Signaler.cpp",
+    "Signaler.h",
+    ]
+    deps = [
+      ":socketioset",
+      ":libuv",
+       "//third_party/boringssl"
+    ]
+    if (is_linux) {
+      cflags = [ "-fexceptions", "-fdeclspec" ]
+      defines = [  "SHAREDLIB",  ]
+    }
+
+    if (is_android) 
+    {
+      cflags = [ "-fexceptions", "-fdeclspec" ]
+      defines = [  "SHAREDLIB",  ]
+    }
+
+    if (is_win) {
+     defines = [  "SHAREDLIB",  ]
+    libs = [
+      "iphlpapi.lib",
+    ]
+  }
+
   }
 
 
