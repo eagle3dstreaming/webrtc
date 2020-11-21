@@ -67,9 +67,8 @@ namespace sa {
     void  stop( )
     {
         
-        
-        if(thread)
-	    {
+      if(thread)
+	{
           thread->shutdown();
           thread->join();
           delete thread;

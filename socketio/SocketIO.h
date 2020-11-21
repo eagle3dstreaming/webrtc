@@ -8,7 +8,7 @@
 
 
 typedef void (*LOCALSDPREADYTOSEND_CALLBACK)(const char* type, const char* sdp);
-typedef void (*MESSAGE_CALLBACK)(const char* msg);
+typedef void (*MESSAGE_CALLBACK)(const char* type, const char* msg);
 
 namespace sa {
 

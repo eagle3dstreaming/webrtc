@@ -192,7 +192,7 @@ namespace SdpParse {
               //                                         nullptr,nullptr );
 
                 SInfo <<  "onoffer  "  ;
-                OnUnityMessage("onoffer");
+                OnUnityMessage("log","onoffer");
 
                 //RegisterOnRemoteI420FrameReady( 2, nullptr);
 
@@ -213,7 +213,7 @@ namespace SdpParse {
 
                  if (OnLocalSdpReady)
                  {
-                     OnUnityMessage(sSdp.c_str());
+                    OnUnityMessage("log",sSdp.c_str());
                     OnLocalSdpReady("offer", sSdp.c_str());
                   }
 
@@ -236,7 +236,7 @@ namespace SdpParse {
 
                 SInfo <<  "onanswer " ;
 
-                OnUnityMessage("onanswer");
+                OnUnityMessage("log", "onanswer");
 
                // recvSDP(from, m["desc"]);
                 //rooms->on_consumer_answer( room, from, to, m["desc"] );
@@ -251,7 +251,7 @@ namespace SdpParse {
                  {
                      SInfo <<  "onanswer1 " <<  sSdp;
 
-                     OnUnityMessage(sSdp.c_str());
+                     OnUnityMessage("log",sSdp.c_str());
 
                     OnLocalSdpReady("answer", sSdp.c_str());
                  }
@@ -273,14 +273,22 @@ namespace SdpParse {
                // recvCandidate(from, m);
             } else if (std::string("bye") == type) {
                // rooms->onDisconnect( from);
-            } 
+            } else if (type == std::string("soundlevel")) {
+                 OnUnityMessage(type,cnfg::stringify(m["desc"]));
+            } else if (type == std::string("score")) {
+                OnUnityMessage(type,cnfg::stringify(m["desc"]));
+            } else if (type == std::string("bwe")) {
+                OnUnityMessage(type,cnfg::stringify(m["desc"]));
+            }
+
+
 
         }
 
-        void Signaler::OnUnityMessage(std::string msg)
+        void Signaler::OnUnityMessage(std::string type, std::string msg)
         {
            if( OnMessage)
-                OnMessage(msg.c_str());
+                OnMessage(type.c_str(), msg.c_str());
         }   
 
         void Signaler::subscribe() {
@@ -356,6 +364,9 @@ namespace SdpParse {
                      LTrace("Another peer made a request to join room " + room)
                     LTrace("This peer is the initiator of room " + room + "!")
                     isChannelReady = true;
+                    
+                    OnUnityMessage("numClients",cnfg::stringify(data[2]));
+
 
                 }));
                 
@@ -364,10 +375,31 @@ namespace SdpParse {
                     LTrace("joined: " + room);
                     isChannelReady = true;
                     isInitiator = true;
+                    OnUnityMessage("numClients",cnfg::stringify(data[2]));
                    // maybeStart();
                     subscribe();
 
                 }));
+
+                 socket->on("leave", Socket::event_listener_aux([&](string const& name, json const& data, bool isAck, json & ack_resp) {
+                    LTrace(cnfg::stringify(data));
+                    LTrace("leave: " + room);
+                    
+                    int numClients = data[2].get<int>();
+
+                    if(  numClients == -1 )
+                    {
+                        OnUnityMessage("log","SFU server is down.");
+                    }
+                    else
+                    {
+                        OnUnityMessage("numClients",cnfg::stringify(data[2]));
+                    }
+
+
+                }));
+
+           
 
    /// for webrtc messages
                 socket->on("message", Socket::event_listener_aux([&](string const& name, json const& m, bool isAck, json & ack_resp) {
