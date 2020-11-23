@@ -33,21 +33,20 @@ namespace base {
         inline static void onRead(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf) {
             auto* connection = static_cast<TcpConnectionBase*> (handle->data);
 
-            if (connection == nullptr)
-                return;
-
-            connection->OnUvRead(nread, buf);
+            if (connection)
+            	connection->OnUvRead(nread, buf);
         }
 
         inline static void onWrite(uv_write_t* req, int status) {
             auto* writeData = static_cast<TcpConnectionBase::UvWriteData*> (req->data);
             auto* handle = req->handle;
             auto* connection = static_cast<TcpConnectionBase*> (handle->data);
+            auto cb         = writeData->cb;
 
             // Delete the UvWriteData struct (which includes the uv_req_t and the store char[]).
             if (connection)
-                connection->OnUvWrite(status);
-            std::free(writeData);
+                connection->OnUvWrite(status,cb);
+            delete writeData;
 
         }
 
@@ -283,13 +282,21 @@ namespace base {
                 LError("error setting peer IP and port");
         }
 
-        int TcpConnectionBase::Write(const char* data, size_t len) {
+        int TcpConnectionBase::Write(const char* data, size_t len, TcpConnectionBase::onSendCallback cb) {
 
             if (this->closed)
+            {
+                if (cb)
+                    (cb)(false);
                 return -1;
+            }
 
             if (len == 0)
+            {
+                if (cb)
+                    (cb)(false);
                 return 0;
+            }
 
             // LTrace("TcpConnectionBase::Write " , len);
 
@@ -304,6 +311,8 @@ namespace base {
 
             // All the data was written. Done.
             if (written == static_cast<int> (len)) {
+                if (cb)
+                    (cb)(true);
                 return written;
             }// Cannot write any data at first time. Use uv_write().
             else if (written == UV_EAGAIN || written == UV_ENOSYS) {
@@ -311,10 +320,12 @@ namespace base {
                 written = 0;
             }// Error. Should not happen.
             else if (written < 0) {
-                LDebug("uv_try_write() failed, closing the connection: %s", uv_strerror(written));
+                //LDebug("uv_try_write() failed, closing the connection: %s", uv_strerror(written));
+                LDebug("uv_try_write() failed, trying uv_write(): %s", uv_strerror(written));
 
-                Close();
-                return -1;
+                //Close(); // arvind TBD .. I am not sure if I should close connection here
+                //return -1;
+                written = 0;
             }
 
             // LDebug(
@@ -323,35 +334,57 @@ namespace base {
 
             size_t pendingLen = len - written;
             // Allocate a special UvWriteData struct pointer.
-            auto* writeData = static_cast<UvWriteData*> (std::malloc(sizeof (UvWriteData) + pendingLen));
+            auto* writeData = new UvWriteData(pendingLen);
 
+            writeData->req.data = static_cast<void*>(writeData);
             std::memcpy(writeData->store, data + written, pendingLen);
-            writeData->req.data = (void*) writeData;
+            writeData->cb = cb;
 
-            buffer = uv_buf_init(reinterpret_cast<char*> (writeData->store), pendingLen);
+            buffer = uv_buf_init(reinterpret_cast<char*>(writeData->store), pendingLen);
 
             int err = uv_write(
-                    &writeData->req,
-                    reinterpret_cast<uv_stream_t*> (this->uvHandle),
-                    &buffer,
-                    1,
-                    static_cast<uv_write_cb> (onWrite));
+              &writeData->req,
+              reinterpret_cast<uv_stream_t*>(this->uvHandle),
+              &buffer,
+              1,
+              static_cast<uv_write_cb>(onWrite));
 
-            if (err != 0) {
+            if (err != 0)
+            {
                 LError("uv_write() failed: %s", uv_strerror(err));
-            } else
-                sentBytes += pendingLen;
 
-            return -2;
+                if (cb)
+                    (cb)(false);
+
+                // Delete the UvWriteData struct (it will delete the store and cb too).
+                delete writeData;
+                return -1;
+            }
+            else
+            {
+                // Update sent bytes.
+                this->sentBytes += pendingLen;
+            }
+
+
+            return pendingLen;
         }
 
-        int TcpConnectionBase::Write(const char* data1, size_t len1, const char* data2, size_t len2) {
+        int TcpConnectionBase::Write(const char* data1, size_t len1, const char* data2, size_t len2, TcpConnection::onSendCallback cb) {
 
             if (this->closed)
+            {
+                if (cb)
+                    (cb)(false);
                 return -1;
+            }
 
             if (len1 == 0 && len2 == 0)
+            {
+                if (cb)
+                    (cb)(false);
                 return 0;
+            }
 
             size_t totalLen = len1 + len2;
             uv_buf_t buffers[2];
@@ -370,6 +403,8 @@ namespace base {
 
             // All the data was written. Done.
             if (written == static_cast<int> (totalLen)) {
+                 if (cb)
+                    (cb)(true);
                 return written;
             }// Cannot write any data at first time. Use uv_write().
             else if (written == UV_EAGAIN || written == UV_ENOSYS) {
@@ -377,48 +412,65 @@ namespace base {
                 written = 0;
             }// Error. Should not happen.
             else if (written < 0) {
-                LDebug("uv_try_write() failed, closing the connection: %s", uv_strerror(written));
+                 //LDebug("uv_try_write() failed, closing the connection: %s", uv_strerror(written));
+                LDebug("uv_try_write() failed, trying uv_write(): %s", uv_strerror(written));
 
-                Close();
-
-                return -1;
+                //Close(); // arvind TBD .. I am not sure if I should close connection here
+                //return -1;
+                written = 0;
             }
 
             size_t pendingLen = totalLen - written;
+            auto* writeData   = new UvWriteData(pendingLen);
 
-            // Allocate a special UvWriteData struct pointer.
-            auto* writeData = static_cast<UvWriteData*> (std::malloc(sizeof (UvWriteData) + pendingLen));
+            writeData->req.data = static_cast<void*>(writeData);
 
             // If the first buffer was not entirely written then splice it.
-            if (static_cast<size_t> (written) < len1) {
+            if (static_cast<size_t>(written) < len1)
+            {
                 std::memcpy(
-                        writeData->store, data1 + static_cast<size_t> (written), len1 - static_cast<size_t> (written));
-                std::memcpy(writeData->store + (len1 - static_cast<size_t> (written)), data2, len2);
-            }// Otherwise just take the pending data in the second buffer.
-            else {
+                  writeData->store, data1 + static_cast<size_t>(written), len1 - static_cast<size_t>(written));
+                std::memcpy(writeData->store + (len1 - static_cast<size_t>(written)), data2, len2);
+            }
+            // Otherwise just take the pending data in the second buffer.
+            else
+            {
                 std::memcpy(
-                        writeData->store,
-                        data2 + (static_cast<size_t> (written) - len1),
-                        len2 - (static_cast<size_t> (written) - len1));
+                  writeData->store,
+                  data2 + (static_cast<size_t>(written) - len1),
+                  len2 - (static_cast<size_t>(written) - len1));
             }
 
-            writeData->req.data = (void*) writeData;
+            writeData->cb = cb;
 
-            uv_buf_t buffer = uv_buf_init(reinterpret_cast<char*> (writeData->store), pendingLen);
+            uv_buf_t buffer = uv_buf_init(reinterpret_cast<char*>(writeData->store), pendingLen);
 
             err = uv_write(
-                    &writeData->req,
-                    reinterpret_cast<uv_stream_t*> (this->uvHandle),
-                    &buffer,
-                    1,
-                    static_cast<uv_write_cb> (onWrite));
+              &writeData->req,
+              reinterpret_cast<uv_stream_t*>(this->uvHandle),
+              &buffer,
+              1,
+              static_cast<uv_write_cb>(onWrite));
 
-            if (err != 0) {
+            if (err != 0)
+            {
                 LError("uv_write() failed: %s", uv_strerror(err));
-            } else
-                sentBytes += pendingLen;
 
-            return -2;
+                if (cb)
+                    (cb)(false);
+
+                // Delete the UvWriteData struct (it will delete the store and cb too).
+                delete writeData;
+                return -1;
+            }
+            else
+            {
+                // Update sent bytes.
+                this->sentBytes += pendingLen;
+            }
+
+             return pendingLen;
+
         }
 
         void TcpConnectionBase::ErrorReceiving() {
@@ -518,12 +570,17 @@ namespace base {
             }
         }
 
-        inline void TcpConnectionBase::OnUvWrite(int status) {
+        inline void TcpConnectionBase::OnUvWrite(int status,onSendCallback cb) {
 
             if (status == 0) {
+                if (cb)
+                 (cb)(true);
             } else {
                 if (status != UV_EPIPE && status != UV_ENOTCONN)
                     this->hasError = true;
+                    
+                if (cb)
+                  (cb)(false);
 
                 LDebug("write error, closing the connection: %s", uv_strerror(status));
                 Close();
@@ -665,7 +722,7 @@ namespace base {
             uint8_t frameLen[2];
 
             base::util::Byte::Set2Bytes(frameLen, 0, len);
-            TcpConnectionBase::Write((const char*)frameLen, 2, data, len);
+            TcpConnectionBase::Write((const char*)frameLen, 2, data, len,nullptr);
            //TcpConnectionBase::Write(data, len);
         }
 

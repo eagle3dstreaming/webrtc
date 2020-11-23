@@ -4,7 +4,7 @@
 #define SignalerAPI_H
 
 
-#define WEBRTC_WIN
+//#define WEBRTC_WIN
 
 #if defined(WEBRTC_WIN)
 #define WEBRTC_PLUGIN_API __declspec(dllexport)

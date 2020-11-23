@@ -29,38 +29,36 @@ namespace base {
         inline static void onAlloc(uv_handle_t* handle, size_t suggestedSize, uv_buf_t* buf) {
             auto* socket = static_cast<UdpSocket*> (handle->data);
 
-            if (socket == nullptr)
-                return;
-
-            socket->OnUvRecvAlloc(suggestedSize, buf);
+            if (socket)
+            	socket->OnUvRecvAlloc(suggestedSize, buf);
         }
 
         inline static void onRecv(
                 uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr, unsigned int flags) {
             auto* socket = static_cast<UdpSocket*> (handle->data);
 
-            if (socket == nullptr)
-                return;
-
-            socket->OnUvRecv(nread, buf, (struct sockaddr*)addr, flags);
+            if (socket)
+            	socket->OnUvRecv(nread, buf, (struct sockaddr*)addr, flags);
         }
 
         inline static void onSend(uv_udp_send_t* req, int status) {
             auto* sendData = static_cast<UdpSocket::UvSendData*> (req->data);
             auto* handle = req->handle;
             auto* socket = static_cast<UdpSocket*> (handle->data);
+	    auto cb       = sendData->cb;
 
 	    if (socket)
-		socket->OnUvSend(status);
+		socket->OnUvSend(status,cb);
 
             // Delete the UvSendData struct (which includes the uv_req_t and the store char[]).
-            std::free(sendData);
+            delete sendData;
 
         }
 
         inline static void onClose(uv_handle_t* handle) {
             //delete handle; // moved to destructor
             SInfo << "onClose";
+  	    delete handle;
         }
 
         /* Instance methods. */
@@ -108,8 +106,8 @@ namespace base {
             if (!this->closed)
                Close();
             
-            if (uvHandle)
-           delete uvHandle;
+           // if (uvHandle)
+           //delete uvHandle;
         }
 
         void UdpSocket::Close() {
@@ -140,13 +138,21 @@ namespace base {
             LInfo("</UdpSocket>");
         }
 
-        int UdpSocket::send( const char* data, unsigned int len, const struct sockaddr* addr ) {
+        int UdpSocket::send( const char* data, unsigned int len, const struct sockaddr* addr , UdpSocket::onSendCallback cb ) {
 
             if (this->closed)
+            {
+                if (cb)
+                (cb)(false);
                 return  -1;
+            }
 
             if (len == 0)
+            {
+                if (cb)
+                (cb)(false);
                 return 0;
+            }
            
           //  if(!addr)
             // addr = GetLocalAddress();
@@ -161,7 +167,9 @@ namespace base {
             if (sent == static_cast<int> (len)) {
                 // Update sent bytes.
                 this->sentBytes += sent;
-
+                if (cb)
+                   (cb)(true);
+                
                 return sent;
             }
             if (sent >= 0) {
@@ -171,44 +179,51 @@ namespace base {
                 // Update sent bytes.
                 this->sentBytes += sent;
 
+                if (cb)
+                 (cb)(false);
+
+
                 return sent;
             }
             // Error,
             if (sent != UV_EAGAIN) {
-              //  LWarn("uv_udp_try_send() failed: %s", uv_strerror(sent)); // will cause recursion lock
-                SWarn << "uv_udp_try_send() failed UV_EAGAIN: " << uv_strerror(sent);
-                //printf("uv_udp_try_send() failed: %s", uv_strerror(sent ));
-                return -1;
+                 SWarn << "uv_udp_try_send() failed trying uv_udp_send()"<< uv_strerror(sent); // will cause recursion lock
+                //SWarn << "uv_udp_try_send() failed UV_EAGAIN: " << uv_strerror(sent);
+                //return -1; // arvind do not return
             }
-            // Otherwise UV_EAGAIN was returned so cannot send data at first time. Use uv_udp_send().
 
-            // MS_DEBUG_DEV("could not send the datagram at first time, using uv_udp_send() now");
+            auto* sendData = new UvSendData(len);
 
-            // Allocate a special UvSendData struct pointer.
-            auto* sendData = static_cast<UvSendData*> (std::malloc(sizeof (UvSendData) + len));
-
+            sendData->req.data = static_cast<void*>(sendData);
             std::memcpy(sendData->store, data, len);
-            sendData->req.data = (void*) sendData;
+            sendData->cb = cb;
 
-            buffer = uv_buf_init(reinterpret_cast<char*> (sendData->store), len);
+            buffer = uv_buf_init(reinterpret_cast<char*>(sendData->store), len);
 
             int err = uv_udp_send(
-                    &sendData->req, this->uvHandle, &buffer, 1, addr, static_cast<uv_udp_send_cb> (onSend));
+              &sendData->req, this->uvHandle, &buffer, 1, addr, static_cast<uv_udp_send_cb>(onSend));
 
-            if (err != 0) {
+            if (err != 0)
+            {
                 // NOTE: uv_udp_send() returns error if a wrong INET family is given
                 // (IPv6 destination on a IPv4 binded socket), so be ready.
-                LWarn("uv_udp_send() failed: ", uv_strerror(err));// will cause recursion lock
-               // printf("uv_udp_send() failed: %s", uv_strerror(err));
+               LWarn("uv_udp_send() failed: ", uv_strerror(err));// will cause recursion lock
 
-                // Delete the UvSendData struct (which includes the uv_req_t and the store char[]).
-                std::free(sendData);
-            } else {
+                if (cb)
+                    (cb)(false);
+
+                // Delete the UvSendData struct (it will delete the store and cb too).
+                delete sendData;
+                return -1;
+            }
+            else
+            {
                 // Update sent bytes.
                 this->sentBytes += len;
             }
+   
             
-            return -2;
+            return len;
         }
 
         
@@ -326,18 +341,23 @@ namespace base {
             }
         }
 
-        inline void UdpSocket::OnUvSend(int status) // NOLINT(misc-unused-parameters)
+        inline void UdpSocket::OnUvSend(int status,UdpSocket::onSendCallback cb)
         {
 
-	   if (this->closed)
-                return;
+    	   if (this->closed)
+                    return;
 
-	   if (status == 0)
-           {
-               //on_send()
-           }
-           else
-            LTrace("send error: ", uv_strerror(status));
+    	   if (status == 0)
+               {
+                   if (cb)
+                    (cb)(true);
+               }
+               else
+               {
+                    if (cb)
+                    (cb)(false);
+                    LTrace("send error: ", uv_strerror(status));
+               }
         }
         
        void UdpSocket::bind() {
