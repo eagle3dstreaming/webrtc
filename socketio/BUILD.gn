@@ -406,11 +406,11 @@ config("socketio_private_config") {
     if (is_android) 
     {
       cflags = [ "-fexceptions", "-fdeclspec" ]
-      defines = [  "SHAREDLIB",  ]
+      defines = [  "SHAREDLIB", "WEBRTC_ANDROID", ]
     }
 
     if (is_win) {
-     defines = [  "SHAREDLIB",  ]
+     defines = [  "SHAREDLIB",  "WEBRTC_WIN", ]
     libs = [
       "iphlpapi.lib",
     ]
