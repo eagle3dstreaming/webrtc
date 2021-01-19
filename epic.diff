@@ -1,0 +1,544 @@
+diff --git a/examples/unityplugin/simple_peer_connection.cc b/examples/unityplugin/simple_peer_connection.cc
+index 7fed55fc19..a554ed58bc 100644
+--- a/examples/unityplugin/simple_peer_connection.cc
++++ b/examples/unityplugin/simple_peer_connection.cc
+@@ -30,6 +30,42 @@
+ #include "modules/audio_device/include/audio_device.h"
+ #include "modules/audio_processing/include/audio_processing.h"
+ 
++
++
++#include "modules/video_coding/codecs/h264/include/h264.h"
++#include "api/video_codecs/video_encoder.h"
++#include "api/audio_codecs/audio_format.h"
++
++#include "api/video_codecs/video_decoder.h"
++#include "api/video_codecs/sdp_video_format.h"
++#include "api/video/video_frame.h"
++#include "api/video/video_frame_buffer.h"
++#include "api/video/i420_buffer.h"
++#include "api/video/video_sink_interface.h"
++
++#include "rtc_base/thread.h"
++#include "rtc_base/logging.h"
++
++
++#include "rtc_base/arraysize.h"
++
++
++
++
++
++#include "media/base/h264_profile_level_id.h"
++
++#include "modules/video_capture/video_capture_factory.h"
++#include "modules/audio_device/include/audio_device.h"
++#include "modules/audio_device/audio_device_buffer.h"
++#include "modules/audio_processing/include/audio_processing.h"
++#include "modules/video_coding/codecs/h264/include/h264.h"
++
++#include "common_video/h264/h264_bitstream_parser.h"
++#include "common_video/h264/h264_common.h"
++
++
++
+ #include <random>
+ 
+ 
+@@ -79,7 +115,253 @@ static  std::list< std::unique_ptr <webrtc::IceCandidateInterface> > store_candi
+ 
+ 
+   // namespace webrtc
++//////////////////////////////////////////////////////////////////////////////////////////
++
++
++
++    class FVideoEncoder : public webrtc::VideoEncoder
++    {
++    public:
++
++        struct FEncoderCookie
++        {
++            virtual ~FEncoderCookie() {}
++            webrtc::EncodedImage EncodedImage;
++            // buffer to hold last encoded frame bitstream, because `webrtc::EncodedImage` doesn't take ownership of
++       };
++
++        FVideoEncoder();
++        ~FVideoEncoder() override;
++
++        bool IsQualityController() const
++        { return true; }
++        void SetQualityController(bool bControlsQuality);
++
++        //
++        // AVEncoder::IVideoEncoderListener
++        //
++        void OnEncodedVideoFrame();
++
++        //
++        // webrtc::VideoEncoder interface
++        //
++        //int32_t InitEncode(const webrtc::VideoCodec* CodecSetings, int32_t NumberOfCores, size_t MaxPayloadSize) override;
++        int32_t InitEncode(const webrtc::VideoCodec* codec_settings,
++                           const webrtc::VideoEncoder::Settings& settings) override;
++
++        int32_t RegisterEncodeCompleteCallback(webrtc::EncodedImageCallback* Callback) override;
++        int32_t Release() override;
++        //int32_t Encode(const webrtc::VideoFrame& Frame, const webrtc::CodecSpecificInfo* CodecSpecificInfo, const std::vector<webrtc::VideoFrameType>* FrameTypes) override;
++        int32_t Encode( const webrtc::VideoFrame& inputImage,    const std::vector<webrtc::VideoFrameType>* frame_types) override;
++        //int32_t SetChannelParameters(uint32 PacketLoss, int64 Rtt) override;
++        //int32_t SetRates(uint32 Bitrate, uint32 Framerate) override;
++        void SetRates(const RateControlParameters& parameters) override;
++        //int32_t SetRateAllocation(const webrtc::VideoBitrateAllocation& Allocation, uint32 Framerate) override;
++        //ScalingSettings GetScalingSettings() const override;
++        //bool SupportsNativeHandle() const override;
++
++        webrtc::VideoEncoder::EncoderInfo GetEncoderInfo() const override
++        {
++            webrtc::VideoEncoder::EncoderInfo info;
++            info.scaling_settings = webrtc::VideoEncoder::ScalingSettings(24, 34);
++            info.supports_native_handle = true;
++            info.implementation_name = "fake-encoder";
++            return info;
++        }
++
++
++    private:
++        // Player session that this encoder instance belongs to
++        webrtc::EncodedImageCallback* Callback = nullptr;
++        webrtc::CodecSpecificInfo CodecSpecific;
++        webrtc::RTPFragmentationHeader FragHeader;
++        webrtc::VideoBitrateAllocation LastBitrate;
++
++    };
++
++
++
++
++    class FVideoEncoderFactory : public webrtc::VideoEncoderFactory
++    {
++    public:
++        explicit FVideoEncoderFactory();
++
++        /**
++        * This is used from the FPlayerSession::OnSucess to let the factory know
++        * what session the next created encoder should belong to.
++        * It allows us to get the right FPlayerSession <-> FVideoEncoder relationship
++        */
++        void AddSession();
++
++        //
++        // webrtc::VideoEncoderFactory implementation
++        //
++        std::vector<webrtc::SdpVideoFormat> GetSupportedFormats() const override;
++        CodecInfo QueryVideoEncoder(const webrtc::SdpVideoFormat& Format) const override;
++        std::unique_ptr<webrtc::VideoEncoder> CreateVideoEncoder(const webrtc::SdpVideoFormat& Format) override;
++
++    private:
++    };
++/////////////////
++
++    FVideoEncoderFactory::FVideoEncoderFactory()
++    {}
++
++    void FVideoEncoderFactory::AddSession()
++    {
++       // PendingPlayerSessions.Enqueue(&PlayerSession);
++    }
++
++    static webrtc::SdpVideoFormat CreateH264Format(webrtc::H264::Profile profile, webrtc::H264::Level level)
++    {
++        const absl::optional<std::string> profile_string =
++                webrtc::H264::ProfileLevelIdToString(webrtc::H264::ProfileLevelId(profile, level));
++
++        return webrtc::SdpVideoFormat
++                (
++                        cricket::kH264CodecName,
++                        {
++                                {cricket::kH264FmtpProfileLevelId, *profile_string},
++                                {cricket::kH264FmtpLevelAsymmetryAllowed, "1"},
++                                {cricket::kH264FmtpPacketizationMode, "1"}
++                        }
++                );
++    }
++    std::vector<webrtc::SdpVideoFormat> FVideoEncoderFactory::GetSupportedFormats() const
++    {
++        // return { CreateH264Format(webrtc::H264::kProfileBaseline, webrtc::H264::kLevel3_1),
++        //	CreateH264Format(webrtc::H264::kProfileConstrainedBaseline, webrtc::H264::kLevel3_1) };
++        // return { CreateH264Format(webrtc::H264::kProfileMain, webrtc::H264::kLevel3_1) };
++        return {CreateH264Format(webrtc::H264::kProfileConstrainedBaseline, webrtc::H264::kLevel5_2)};
++        // return { CreateH264Format(webrtc::H264::kProfileHigh, webrtc::H264::kLevel5_1) };
++    }
++
++    webrtc::VideoEncoderFactory::CodecInfo
++    FVideoEncoderFactory::QueryVideoEncoder(const webrtc::SdpVideoFormat& Format) const
++    {
++        CodecInfo Info;
++        Info.is_hardware_accelerated = true;
++        Info.has_internal_source = false;
++        return Info;
++    }
++
++    std::unique_ptr<webrtc::VideoEncoder> FVideoEncoderFactory::CreateVideoEncoder(const webrtc::SdpVideoFormat& Format)
++    {
++
++        auto VideoEncoder = std::make_unique<FVideoEncoder>();
++
++
++      //  VideoEncoder.
++       // Session->SetVideoEncoder(VideoEncoder.get());
++        return VideoEncoder;
++    }
++
++//
++// FVideoEncoder
++//
++
++    FVideoEncoder::FVideoEncoder()
++    {
++
++    }
++
++    FVideoEncoder::~FVideoEncoder()
++    {
++       // UE_LOG(PixelStreamer, Log, TEXT("WebRTC VideoEncoder destroyed"));
++    }
++
++    void FVideoEncoder::SetQualityController(bool bControlsQualityNow)
++    {
++
++    }
++
++    int32_t FVideoEncoder::InitEncode(const webrtc::VideoCodec* codec_settings, const webrtc::VideoEncoder::Settings& settings)
++    {
++        return WEBRTC_VIDEO_CODEC_OK;
++    }
+ 
++    int32_t FVideoEncoder::RegisterEncodeCompleteCallback(webrtc::EncodedImageCallback* InCallback)
++    {
++        Callback = InCallback;
++
++        return 0;
++    }
++
++    int32_t FVideoEncoder::Release()
++    {
++
++        Callback = nullptr;
++        return 0;
++    }
++
++
++
++
++    int32_t FVideoEncoder::Encode(const webrtc::VideoFrame& Frame, const std::vector<webrtc::VideoFrameType>* FrameTypes)
++    {
++        if (Callback) {
++                Callback->OnEncodedImage(webrtc::EncodedImage(), nullptr,
++                                                      nullptr);
++        }
++
++        return WEBRTC_VIDEO_CODEC_OK;
++    }
++
++    void FVideoEncoder::OnEncodedVideoFrame()
++    {
++        int x =0;
++        // Deliver encoded image.
++       // Callback->OnEncodedImage(Cookie->EncodedImage, &CodecSpecific, &FragHeader);
++
++        //// lame video recording to a file
++        //static IFileHandle* FileHandle = nullptr;
++        //if (!FileHandle)
++        //{
++        //	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
++        //	FileHandle = PlatformFile.OpenWrite(TEXT("c:/tmp/nvenc.h264"));
++        //	check(FileHandle);
++        //}
++
++        //FileHandle->Write(EncodedImage._buffer, EncodedImage._length);
++        //FileHandle->Flush();
++    }
++
++// int32_t FVideoEncoder::SetChannelParameters(uint32_t PacketLoss, int64 Rtt)
++// {
++// 	return 0;
++// }
++
++    void FVideoEncoder::SetRates(const RateControlParameters& parameters)
++    {
++        int x =0;
++        //checkNoEntry(); // unexpected call, if even happens, check if passed Bitrate/Framerate should be taken into account
++    }
++
++// int32_t FVideoEncoder::SetRateAllocation(const webrtc::VideoBitrateAllocation& Allocation, uint32_t Framerate)
++// {
++// 	LastBitrate = Allocation;
++// 	LastFramerate = Framerate;
++
++// 	if (bControlsQuality)
++// 	{
++// 		UE_LOG(PixelStreamer, Log, TEXT("%s : PlayerId=%d, Bitrate=%u kbps, framerate=%u"), TEXT(__FUNCTION__), PlayerSession->GetPlayerId(), Allocation.get_sum_kbps(), Framerate);
++// 	}
++
++// 	return 0;
++// }
++
++// webrtc::VideoEncoder::ScalingSettings FVideoEncoder::GetScalingSettings() const
++// {
++// 	return ScalingSettings{24, 34};
++// }
++
++// bool FVideoEncoder::SupportsNativeHandle() const
++// {
++// 	return true;
++// }
++
++    std::unique_ptr<FVideoEncoderFactory> VideoEncoderFactoryStrong;
+ ///////////////////////////////////////////////////////////////////////////////////////////
+ 
+ static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
+@@ -169,7 +451,7 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
+       jclass pc_factory_class =
+                   unity_plugin::FindClass(env, "org/webrtc/UnityUtility");
+ 
+-      #ifdef MULTIPLEX_CODEX
++      #ifdef MULTIPLEX_CODEX1
+       jmethodID ME = webrtc::GetStaticMethodID(
+                   env, pc_factory_class, "DefaultVideoEncoderFactory", "()Lorg/webrtc/VideoEncoderFactory;");
+       jobject ME_obj = env->CallStaticObjectMethod( pc_factory_class, ME);
+@@ -188,19 +470,24 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
+ 
+       //  Arind other codex also works Replace MultiplexAugmentOnlyEncoderFactory with    MultiplexEncoderFactory  , MultiplexAugmentOnlyDecoderFactory  MultiplexDecoderFactory
+ 
++
++
+        g_peer_connection_factory = webrtc::CreatePeerConnectionFactory(
+                g_network_thread.get(), g_worker_thread.get(), g_signaling_thread.get(),
+             nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
+             webrtc::CreateBuiltinAudioDecoderFactory(),
+ 
+-            std::unique_ptr<webrtc::VideoEncoderFactory>(
+-                    new webrtc::MultiplexAugmentOnlyEncoderFactory(
+-                            absl::WrapUnique(CreateVideoEncoderFactory(env,   ( const webrtc::JavaRef<jobject>&) ME_obj )),
+-                            false ))
+-                    ,
+-            std::unique_ptr<webrtc::VideoDecoderFactory>(
+-                    new webrtc::MultiplexAugmentOnlyDecoderFactory(
+-                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) MD_obj)), false ))
++
++
++//            std::unique_ptr<webrtc::VideoEncoderFactory>(
++//                    new webrtc::MultiplexAugmentOnlyEncoderFactory(
++//                            absl::WrapUnique(CreateVideoEncoderFactory(env,   ( const webrtc::JavaRef<jobject>&) ME_obj )),
++//                            false ))
++//                    ,
++//            std::unique_ptr<webrtc::VideoDecoderFactory>(
++//                    new webrtc::MultiplexAugmentOnlyDecoderFactory(
++//                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) MD_obj)), false ))
++
+                     ,
+             nullptr, nullptr);
+        #else
+@@ -209,6 +496,13 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
+  * defualt fatcor
+ *************************************************************************************************************/
+ 
++
++      VideoEncoderFactoryStrong = std::make_unique<FVideoEncoderFactory>();
++
++      // #HACK: Keep a pointer to the Video encoder factory, so we can use it to figure out the
++      // FPlayerSession <-> FVideoEncoder relationship later on
++      //VideoEncoderFactory = VideoEncoderFactoryStrong.get();
++
+       jmethodID defaultME = webrtc::GetStaticMethodID(
+                   env, pc_factory_class, "DefaultVideoEncoderFactory", "()Lorg/webrtc/VideoEncoderFactory;");
+       jobject defaultME_obj = env->CallStaticObjectMethod( pc_factory_class, defaultME);
+@@ -228,12 +522,14 @@ bool SimplePeerConnection::InitializePeerConnection(const char** turn_urls,
+             nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
+             webrtc::CreateBuiltinAudioDecoderFactory(),
+ 
+-            std::unique_ptr<webrtc::VideoEncoderFactory>(
+-                            absl::WrapUnique(CreateVideoEncoderFactory(env,  ( const webrtc::JavaRef<jobject>&) defaultME_obj)))
+-                    ,
+-            std::unique_ptr<webrtc::VideoDecoderFactory>(
+-                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) defaultMD_obj)))
+-                    ,
++               std::move(VideoEncoderFactoryStrong),
++               std::make_unique<webrtc::InternalDecoderFactory>(),
++//            std::unique_ptr<webrtc::VideoEncoderFactory>(
++//                            absl::WrapUnique(CreateVideoEncoderFactory(env,  ( const webrtc::JavaRef<jobject>&) defaultME_obj)))
++//                    ,
++//            std::unique_ptr<webrtc::VideoDecoderFactory>(
++//                            absl::WrapUnique(CreateVideoDecoderFactory(env, ( const webrtc::JavaRef<jobject>&) defaultMD_obj)))
++//                    ,
+             nullptr, nullptr);
+       #endif
+ 
+@@ -760,7 +1056,7 @@ void SimplePeerConnection::AddStreams(bool audio_only) {
+     peer_connection_->AddTrack(audio_track, {streamId});
+ 
+   if (!audio_only) {
+-#if defined(WEBRTC_ANDROIDNOT)
++#if defined(WEBRTC_ANDROIDNOT111)
+     JNIEnv* env = webrtc::jni::GetEnv();
+     jclass pc_factory_class =
+         unity_plugin::FindClass(env, "org/webrtc/UnityUtility");
+@@ -932,11 +1228,53 @@ std::vector<uint32_t> SimplePeerConnection::GetRemoteAudioTrackSsrcs() {
+   return ssrcs;
+ }
+ 
++class FRawFrameBuffer : public webrtc::VideoFrameBuffer
++{
++public:
++    explicit FRawFrameBuffer(int InWidth, int InHeight):
++            Width(InWidth),
++            Height(InHeight)
++    {
++    }
++
++    //
++    // webrtc::VideoFrameBuffer interface
++    //
++    Type type() const override
++    {
++        return Type::kNative;
++    }
++
++    virtual int width() const override
++    {
++        return Width;
++    }
++
++    virtual int height() const override
++    {
++        return Height;
++    }
+ 
++    rtc::scoped_refptr<webrtc::I420BufferInterface> ToI420() override
++    {
++
++        return nullptr;
++    }
++
++    //
++    // Own methods
++    //
++
++
++private:
++      int Width;
++    int Height;
++};
+ void SimplePeerConnection::I420_PushFrame(const uint8_t* data_y, const uint8_t* data_u, const uint8_t* data_v,
+                     const uint8_t* data_a, int stride_y, int stride_u,   int stride_v,  int stride_a,   uint32_t width,  uint32_t height)
+ {
+ 
++#if 0
+     static uint16_t myid= 0;
+ 
+     rtc::scoped_refptr<webrtc::I420Buffer> scaled_buffer =
+@@ -975,7 +1313,16 @@ void SimplePeerConnection::I420_PushFrame(const uint8_t* data_y, const uint8_t*
+                     .set_id(++myid);
+ 
+     //dataCallback->OnFrame(  new_frame_builder.build());
+-    video_device->OnFrame(new_frame_builder.build() );
++     video_device->OnFrame(new_frame_builder.build() );
++#endif
++rtc::scoped_refptr<FRawFrameBuffer> Buffer = new rtc::RefCountedObject<FRawFrameBuffer>(400, 300);
++
++    webrtc::VideoFrame Frame = webrtc::VideoFrame::Builder().
++            set_video_frame_buffer(Buffer).
++            set_rotation(webrtc::kVideoRotation_0).
++           set_timestamp_us(rtc::TimeMicros()).
++            build();
++    video_device->OnFrame(Frame );
+ }
+ 
+ void SimplePeerConnection::I420_PushFrameRGBA( const uint8_t*  rgbBuf, int bufLen, const uint8_t*  augBuf,
+diff --git a/examples/unityplugin/video_observer.cc b/examples/unityplugin/video_observer.cc
+index ce34fe1563..04cd81b8c9 100644
+--- a/examples/unityplugin/video_observer.cc
++++ b/examples/unityplugin/video_observer.cc
+@@ -57,10 +57,10 @@ void VideoObserver::OnFrame(const webrtc::VideoFrame& frame) {
+   else if (buffer->type() != webrtc::VideoFrameBuffer::Type::kI420A) {
+     rtc::scoped_refptr<webrtc::I420BufferInterface> i420_buffer =
+         buffer->ToI420();
+-    OnI420FrameReady(nClientID,i420_buffer->DataY(), i420_buffer->DataU(),
+-                     i420_buffer->DataV(), nullptr, i420_buffer->StrideY(),
+-                     i420_buffer->StrideU(), i420_buffer->StrideV(), 0,
+-                     frame.width(), frame.height());
++//    OnI420FrameReady(nClientID,i420_buffer->DataY(), i420_buffer->DataU(),
++//                     i420_buffer->DataV(), nullptr, i420_buffer->StrideY(),
++//                     i420_buffer->StrideU(), i420_buffer->StrideV(), 0,
++//                     frame.width(), frame.height());
+ 
+   } else {
+     // The buffer has alpha channel.
+diff --git a/socketio/BUILD.gn b/socketio/BUILD.gn
+index ec232f6b21..c73eb8d59c 100644
+--- a/socketio/BUILD.gn
++++ b/socketio/BUILD.gn
+@@ -406,11 +406,11 @@ config("socketio_private_config") {
+     if (is_android) 
+     {
+       cflags = [ "-fexceptions", "-fdeclspec" ]
+-      defines = [  "SHAREDLIB",  ]
++      defines = [  "SHAREDLIB", "WEBRTC_ANDROID", ]
+     }
+ 
+     if (is_win) {
+-     defines = [  "SHAREDLIB",  ]
++     defines = [  "SHAREDLIB",  "WEBRTC_WIN", ]
+     libs = [
+       "iphlpapi.lib",
+     ]
+diff --git a/socketio/Signaler.cpp b/socketio/Signaler.cpp
+index 5b482d9291..5ccc2abc13 100644
+--- a/socketio/Signaler.cpp
++++ b/socketio/Signaler.cpp
+@@ -19,7 +19,7 @@ namespace SdpParse {
+ 
+         Signaler::Signaler(const std::string ip, const uint16_t port, const std::string roomid ) : m_IP(ip), m_port(port),shuttingDown(false)
+         {
+-            room = roomid;
++            room = "Sfu-Room";
+            // Logger::instance().add(new ConsoleChannel("debug", Level::Trace));
+             Logger::instance().add(new ConsoleChannel("debug", Level::Trace));
+ 
+diff --git a/socketio/SignalerAPI.h b/socketio/SignalerAPI.h
+index 16885a1a14..c9ea677ae9 100644
+--- a/socketio/SignalerAPI.h
++++ b/socketio/SignalerAPI.h
+@@ -4,7 +4,7 @@
+ #define SignalerAPI_H
+ 
+ 
+-#define WEBRTC_WIN
++//#define WEBRTC_WIN
+ 
+ #if defined(WEBRTC_WIN)
+ #define WEBRTC_PLUGIN_API __declspec(dllexport)
+diff --git a/socketio/client/src/http/src/websocket.cpp b/socketio/client/src/http/src/websocket.cpp
+index 09f17a926d..144a56ed90 100644
+--- a/socketio/client/src/http/src/websocket.cpp
++++ b/socketio/client/src/http/src/websocket.cpp
+@@ -544,8 +544,16 @@ namespace base {
+                 }
+             }
+ 
++
++            if (offset + payloadOffset + payloadLength > limit)
++            {
++
++                LError( "WebSocket error: Incomplete frame received"); //, ErrorPayloadTooBig
++                return 0;
++            }
++
+             // Update frame length to include payload plus header
+-            frame.seek(size_t(offset + payloadOffset + payloadLength));
++            frame.seek(size_t(offset + payloadOffset + payloadLength));// arvind need to fix
+             // frame.limit(offset + payloadOffset + payloadLength);
+             // int frameLength = (offset + payloadOffset);
+             // assert(frame.position() == (offset + payloadOffset));
