@@ -1,0 +1,16 @@
+diff --git a/config/win/BUILD.gn b/config/win/BUILD.gn
+index 866af2394..a3d9f505a 100644
+--- a/config/win/BUILD.gn
++++ b/config/win/BUILD.gn
+@@ -493,9 +493,9 @@ config("dynamic_crt") {
+ config("static_crt") {
+   if (is_debug) {
+     # This pulls in the static debug CRT and defines _DEBUG
+-    cflags = [ "/MTd" ]
++    cflags = [ "/MDd" ]
+   } else {
+-    cflags = [ "/MT" ]
++    cflags = [ "/MD" ]
+   }
+ }
+ 

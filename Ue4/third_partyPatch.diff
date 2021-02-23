@@ -1,0 +1,84 @@
+
+diff --git a/abseil-cpp/absl/meta/type_traits.h b/abseil-cpp/absl/meta/type_traits.h
+index 927244e09df..4c7409d9473 100644
+--- a/abseil-cpp/absl/meta/type_traits.h
++++ b/abseil-cpp/absl/meta/type_traits.h
+@@ -261,8 +261,12 @@ struct is_trivially_destructible
+                                    std::is_destructible<T>::value> {
+ #ifdef ABSL_HAVE_STD_IS_TRIVIALLY_DESTRUCTIBLE
+  private:
+-  static constexpr bool compliant = std::is_trivially_destructible<T>::value ==
+-                                    is_trivially_destructible::value;
++  // static constexpr bool compliant = std::is_trivially_destructible<T>::value ==
++  //                                   is_trivially_destructible::value;
++    static constexpr bool compliant = std::is_trivially_destructible<T>::value ==
++    std::integral_constant<bool, __has_trivial_destructor(T) &&
++    std::is_destructible<T>::value>::value;
++    //arvind
+   static_assert(compliant || std::is_trivially_destructible<T>::value,
+                 "Not compliant with std::is_trivially_destructible; "
+                 "Standard: false, Implementation: true");
+@@ -379,9 +383,15 @@ struct is_trivially_copy_constructible
+           std::is_lvalue_reference<T>>::type::type {
+ #ifdef ABSL_HAVE_STD_IS_TRIVIALLY_CONSTRUCTIBLE
+  private:
+-  static constexpr bool compliant =
++    static constexpr bool compliant =
+       std::is_trivially_copy_constructible<T>::value ==
+-      is_trivially_copy_constructible::value;
++    std::integral_constant<bool, __has_trivial_copy(T) &&
++    std::is_copy_constructible<T>::value &&
++    is_trivially_destructible<T>::value>::value;
++    //arvind
++  // static constexpr bool compliant =
++  //     std::is_trivially_copy_constructible<T>::value ==
++  //     is_trivially_copy_constructible::value;
+   static_assert(compliant || std::is_trivially_copy_constructible<T>::value,
+                 "Not compliant with std::is_trivially_copy_constructible; "
+                 "Standard: false, Implementation: true");
+@@ -449,9 +459,17 @@ struct is_trivially_copy_assignable
+                     absl::is_copy_assignable<T>::value> {
+ #ifdef ABSL_HAVE_STD_IS_TRIVIALLY_ASSIGNABLE
+  private:
+-  static constexpr bool compliant =
++  // static constexpr bool compliant =
++  //     std::is_trivially_copy_assignable<T>::value ==
++  //     is_trivially_copy_assignable::value;
++
++ static constexpr bool compliant =
+       std::is_trivially_copy_assignable<T>::value ==
+-      is_trivially_copy_assignable::value;
++    std::integral_constant<
++    bool, __has_trivial_assign(typename std::remove_reference<T>::type) &&
++    std::is_copy_assignable<T>::value>::value;
++    //arvind
++
+   static_assert(compliant || std::is_trivially_copy_assignable<T>::value,
+                 "Not compliant with std::is_trivially_copy_assignable; "
+                 "Standard: false, Implementation: true");
+diff --git a/usrsctp/BUILD.gn b/usrsctp/BUILD.gn
+index 94f26786e1d..8bc4806d57f 100644
+--- a/usrsctp/BUILD.gn
++++ b/usrsctp/BUILD.gn
+@@ -26,6 +26,10 @@ config("usrsctp_warnings") {
+ }
+ 
+ static_library("usrsctp") {
++   include_dirs = [
++  "c:/UnrealEngine/Engine/Source/ThirdParty/OpenSSL/1.1.1/Include/Win64/VS2015/",
++  ]
++
+   sources = [
+     "usrsctplib/usrsctplib/netinet/sctp.h",
+     "usrsctplib/usrsctplib/netinet/sctp_asconf.c",
+@@ -140,7 +144,7 @@ static_library("usrsctp") {
+   if (is_fuchsia) {
+     defines += [ "__Userspace_os_Fuchsia" ]
+   }
+-  deps = [
+-    "//third_party/boringssl",
+-  ]
++  #deps = [
++  #  "//third_party/boringssl",
++  #]
+ }
