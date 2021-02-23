@@ -78,6 +78,7 @@ gclient sync
 
 
 pwd
+
 webrtc-checkout/src
 
 cp Ue4/buildPatch.diff to build
@@ -94,6 +95,14 @@ cp Ue4/third_partyPatch.diff to third_party
 cd third_party
 
 git apply third_partyPatch.diff
+
+cd ..
+
+cp Ue4/srtpPatch.diff to third_party/libsrtp
+
+cd third_party/libsrtp
+
+git apply srtpPatch.diff
 
 cd ..
 
