@@ -1,0 +1,25 @@
+diff --git a/BUILD.gn b/BUILD.gn
+index 6359585..23bf8c7 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -52,6 +52,7 @@ config("libsrtp_config") {
+     "config",
+     "include",
+     "crypto/include",
++     "c:/UnrealEngine/Engine/Source/ThirdParty/OpenSSL/1.1.1/Include/Win64/VS2015/",
+   ]
+ }
+ 
+@@ -114,9 +115,9 @@ static_library("libsrtp") {
+     "srtp/ekt.c",
+     "srtp/srtp.c",
+   ]
+-  public_deps = [
+-    "//third_party/boringssl:boringssl",
+-  ]
++ # public_deps = [
++ #   "//third_party/boringssl:boringssl",
++ # ]
+ }
+ 
+ if (build_libsrtp_tests) {
