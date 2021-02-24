@@ -132,11 +132,10 @@ out\x64\Release\obj\webrtc.lib to C:\UnrealEngine\Engine\Source\ThirdParty\WebRT
 
 
 
-## Command line to run game with pixel streamimg eabled
-For running game project for Pixel streamming
+# Command line to run game with pixel streamimg eabled
 ./project -AudioMixer -PixelStreamingIP=localhost -PixelStreamingPort=8888 -RenderOffScreen -log
 
-##Upload project to control panel
+# Upload project to control panel
 https://connector.eagle3dstreaming.com:500/nelsonww/ControlPanel/083057
 
 
