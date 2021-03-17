@@ -4,13 +4,20 @@ Authored by Arvind Umrao.
 
 email id akumrao@yahoo.com
 
-https://github.com/akumrao
-
-
 Version 0.1
 
 ## Purpose of this Document
 This document helps in compiling Eagle3D PixelStreaming Plugin
+
+
+## Features this repoistory provides
+- Lite -ICE
+- WebRTC Statistics 
+- M76 webrtc version, rev.28114
+- Audio Mute Control
+- Onfly Webrtc parameter Settings
+- Better Frame Adaption 
+
 
 
 ## _Pixel Streamig Compilation_
@@ -66,9 +73,9 @@ cd src
 
 set DEPOT_TOOLS_WIN_TOOLCHAIN=0
 
-cd src git branch -r git checkout branch-heads/m75
+cd src git branch -r git checkout branch-heads/m76
 
-git remote add arvind git@github.com:akumrao/webrtcwithsocketio.git
+git remote add arvind git@github.com:eagle3dstreaming/webrtc.git
 
 git remote update
 
@@ -98,11 +105,11 @@ git apply third_partyPatch.diff
 
 cd ..
 
-cp Ue4/srtpPatch.diff to third_party/libsrtp
+cp Ue4srtppatch.diff to third_party\libsrtp
 
 cd third_party/libsrtp
 
-git apply srtpPatch.diff
+git apply srtppatch.diff
 
 cd ..
 
@@ -117,32 +124,25 @@ gn gen out/x64/Release  --args="target_cpu=\"x64\" use_rtti=true is_debug=false 
 ninja -C out/x64/Release webrtc
 
 
-## Features
-- Lite -ICE
-- WebRTC Statistics 
-- M76 webrtc version
-- Audio Mute Control
-- Onfly Webrtc parameter Settings
-- Better Frame Adaption 
+to copy header files of webrtc
+find . -iname "*.h" | xargs -If cp --parents f /c/arvind
+
+to copy lib
+out\x64\Release\obj\webrtc.lib to C:\UnrealEngine\Engine\Source\ThirdParty\WebRTC\rev.28114\Lib\Win64\VS2015\Release
 
 
 
-## PATH and Commands
-For running game project for Pixel streamming
+# Command line to run game with pixel streamimg eabled
 ./project -AudioMixer -PixelStreamingIP=localhost -PixelStreamingPort=8888 -RenderOffScreen -log
 
-//Upload project to control panel 
+# Upload project to control panel
 https://connector.eagle3dstreaming.com:500/nelsonww/ControlPanel/083057
 
 
 
 
 
-//For demo
-https://prod.eagle3dstreaming.com:8228/5435467354?&appName=Arvind&isDebugging=1&showbrowserMouse=0&useExtendedTyping=0&showPsControl=0&MouseControlScheme=1&expireOn=999999999&exeLunchArgs=-ResX=1280%20%20-ResY=720
 
 
-to copy header files of webrtc
-find . -iname "*.h" | xargs -If cp --parents f /c/arvind
 
 
