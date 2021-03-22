@@ -21,6 +21,10 @@ static_library("win_h264_accel") {
     "H264Decoder/H264Decoder.cc",
   ]
 
+ include_dirs = [
+      "//third_party/libvpx/source/libvpx/",
+    ]
+
   deps = [
     "//:webrtc_common",
     "//common_video:common_video",
