@@ -1,0 +1,42 @@
+
+
+static_library("win_h264_accel") {
+  sources = [
+    "win_h264_factory.cc",
+    "win_h264_factory.h",
+    "native_handle_buffer.h",
+    "Utils/Utils.h",
+    "Utils/Async.h",
+    "Utils/CritSec.h",
+    "Utils/OpQueue.h",
+    "Utils/SampleAttributeQueue.h",
+    "H264Encoder/H264Encoder.h",
+    "H264Encoder/H264Encoder.cc",
+    "H264Encoder/H264MediaSink.h",
+    "H264Encoder/H264MediaSink.cc",
+    "H264Encoder/H264StreamSink.h",
+    "H264Encoder/H264StreamSink.cc",
+    "H264Encoder/IH264EncodingCallback.h",
+    "H264Decoder/H264Decoder.h",
+    "H264Decoder/H264Decoder.cc",
+  ]
+
+ include_dirs = [
+      "//third_party/libvpx/source/libvpx/",
+    ]
+
+  deps = [
+    "//:webrtc_common",
+    "//common_video:common_video",
+    "//modules/video_coding:video_coding_utility",
+    "//system_wrappers:system_wrappers",
+  ]
+
+  #Added because of warning C4467: usage of ATL attributes is deprecated.
+  #Problem is usage of uuid attribute for IAsyncStreamSinkOperation in H264StreamSink.h file. 
+  #It is planned to be modified, so this is temporrary fix. 
+  if (target_os == "winuwp") {
+    cflags = [ "/wd4467" ]
+    cflags_cc = [ "/wd4467" ]
+  }
+}

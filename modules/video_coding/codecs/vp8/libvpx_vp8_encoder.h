@@ -37,10 +37,10 @@ class LibvpxVp8Encoder : public VideoEncoder {
   LibvpxVp8Encoder();
   explicit LibvpxVp8Encoder(std::unique_ptr<Vp8FrameBufferControllerFactory>
                                 frame_buffer_controller_factory);
-  explicit LibvpxVp8Encoder(std::unique_ptr<LibvpxInterface> interface);
+  explicit LibvpxVp8Encoder(std::unique_ptr<LibvpxInterface> interface1);
   LibvpxVp8Encoder(std::unique_ptr<Vp8FrameBufferControllerFactory>
                        frame_buffer_controller_factory,
-                   std::unique_ptr<LibvpxInterface> interface);
+                   std::unique_ptr<LibvpxInterface> interface1);
   ~LibvpxVp8Encoder() override;
 
   int Release() override;
