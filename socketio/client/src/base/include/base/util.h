@@ -768,18 +768,18 @@ inline uint32_t Byte::PadTo4Bytes(uint32_t size)
                 return size;
 }
 
-class Bits
-{
-public:
-        static size_t CountSetBits(const uint16_t mask);
-};
+// class Bits
+// {
+// public:
+//         static size_t CountSetBits(const uint16_t mask);
+// };
 
-/* Inline static methods. */
+// /* Inline static methods. */
 
-inline size_t Bits::CountSetBits(const uint16_t mask)
-{
-        return static_cast<size_t>(__builtin_popcount(mask));
-}
+// inline size_t Bits::CountSetBits(const uint16_t mask)
+// {
+//         return static_cast<size_t>(__builtin_popcount(mask));
+// }
 
 
 } // namespace util

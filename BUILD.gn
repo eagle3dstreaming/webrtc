@@ -445,6 +445,7 @@ if (!build_with_chromium) {
       "rtc_base",
       "sdk",
       "video",
+      #"//third_party/winuwp_h264"
     ]
 
     if (rtc_include_builtin_audio_codecs) {

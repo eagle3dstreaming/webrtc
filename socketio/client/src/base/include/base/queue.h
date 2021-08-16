@@ -19,11 +19,12 @@
 #include "base/platform.h"
 //#include "base/synchronizer.h"
 #include "base/thread.h"
-#include "uv.h"
+#include "base/logger.h"
+//#include "uv.h"
 #include <queue>
 #include <algorithm>
 #include <mutex>
-
+#include <condition_variable>
 namespace base {
 
 

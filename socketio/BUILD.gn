@@ -33,9 +33,16 @@ config("socketio_config") {
     }
     else
     {
+	# EHsc for exception. W4 & w for warning levels
 
-       cflags_cc = ["-w",  "/EHsc" , "-Wno-error" , "-Wno-inconsistent-missing-override",
-       "-Wno-overloaded-virtual"]
+        if (is_clang) {
+            cflags_cc = ["-w",  "/EHsc" , "-Wno-error" , "-Wno-inconsistent-missing-override",
+            "-Wno-overloaded-virtual"]
+        }
+        else
+        {
+           cflags_cc = ["/W4",  "/EHsc"]
+        }
 
         defines = [  "SCY_WIN",  ]
 
@@ -92,8 +99,8 @@ config("socketio_private_config") {
 
 
     sources = [
-    "SocketIO.h",
-    "SocketIO.cpp",
+    #"SocketIO.h",
+    #"SocketIO.cpp",
     "client/src/base/include/base/buffer.h",
     "client/src/base/include/base/Timer.h",
     "client/src/base/include/base/sha1.h",
@@ -161,6 +168,7 @@ config("socketio_private_config") {
     "client/src/net/src/UdpSocket.cpp",
     "client/src/net/src/ssladapter.cpp",
 
+    "client/src/http/include/http/HTTPResponder.h",
     "client/src/http/include/http/responder.h",
     "client/src/http/include/http/request.h",
     "client/src/http/include/http/util.h",
@@ -180,6 +188,7 @@ config("socketio_private_config") {
     "client/src/http/include/http/parser.h",
     "client/src/http/include/http/form.h",
 
+    "client/src/http/src/HTTPResponder.cpp",
     "client/src/http/src/client.cpp",
     "client/src/http/src/httputil.cpp",
     "client/src/http/src/request.cpp",
@@ -373,6 +382,25 @@ config("socketio_private_config") {
     }
   }
 
+  executable("testhttp") {
+    sources = [
+      "mainhttp.cpp",
+    ]
+    deps = [
+      ":socketioset",
+      ":libuv",
+       "//third_party/boringssl"
+    ]
+    if (is_linux) {
+      cflags = [ "-fexceptions" ]
+    }
+
+      if (is_win) {
+    libs = [
+      "iphlpapi.lib",
+    ]
+    }
+  }
 
   static_library("socketio") {
  

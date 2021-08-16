@@ -15,6 +15,7 @@
 #include <string>
 #include <functional>
 
+// TcpConnection class is for RFC 4571 for RTP transport. Please do not use it other than SFU/MCU.
 
 namespace base
 {
@@ -28,10 +29,20 @@ namespace base
         class TcpConnectionBase: public Listener
         {
         protected:
-        using onSendCallback =  std::function<void(bool sent)>;
+       
 
         
         public:
+             using onSendCallback =  std::function<void(bool sent)>;
+            class ListenerClose
+            {
+            public:
+                    virtual ~ListenerClose() = default;
+
+            public:
+                    virtual void OnTcpConnectionClosed(TcpConnectionBase* connection) = 0;
+            };
+
 
             struct UvWriteData
             {
@@ -58,7 +69,7 @@ namespace base
             friend class TcpServerBase;
 
         public:
-            explicit TcpConnectionBase(bool tls = false);
+            explicit TcpConnectionBase(Listener *lis = nullptr, bool tls = false);
             TcpConnectionBase& operator=(const TcpConnectionBase&) = delete;
             TcpConnectionBase(const TcpConnectionBase&) = delete;
             virtual ~TcpConnectionBase();
@@ -67,12 +78,12 @@ namespace base
             void Close();
             void Connect( std::string ip, int port,  addrinfo *addrs = nullptr);
             virtual void on_connect() { }
-            virtual void on_read(const char* data, size_t len) = 0;
+            virtual void on_read(const char* data, size_t len) {}
             virtual void on_tls_read(const char* data, size_t len){}
-            virtual void on_close() {}
+            virtual void on_close();
             virtual void Dump() const;
             void Setup(
-                  //  Listener* listener,
+                    ListenerClose* listenerClose, uv_loop_t* _loop,
                     struct sockaddr_storage* localAddr,
                     const std::string& localIp,
                     uint16_t localPort);
@@ -100,7 +111,7 @@ namespace base
             void OnUvRead(ssize_t nread, const uv_buf_t* buf);
             void OnUvWrite(int status,onSendCallback cb);
 
-          
+            void send(const char* data, size_t len) override ;
 
         protected:
             // Passed by argument.
@@ -114,9 +125,10 @@ namespace base
             struct sockaddr_storage peerAddr;
             std::string peerIp;
             uint16_t peerPort{ 0};
+           
 
         public:
-            
+             ListenerClose* listenerClose{nullptr};
             size_t GetRecvBytes() const;
             size_t GetSentBytes() const;
             
@@ -138,6 +150,9 @@ namespace base
             bool hasError{ false};
             
             bool tls;
+            
+            protected:
+            Listener* listener{ nullptr};
             
         };
 
@@ -184,7 +199,7 @@ namespace base
         }
 
       /*******************************************************************************************************************************************************/
-
+        // TcpConnection class is for RFC 4571 for RTP transport. Please do not use it other than SFU/MCU.
         class TcpConnection : public TcpConnectionBase
         {
         public:
@@ -211,7 +226,7 @@ namespace base
 
         public:
             // Passed by argument.
-            Listener* listener{ nullptr};
+          
             // Others.
         public:
             size_t frameStart{ 0}; // Where the latest frame starts.

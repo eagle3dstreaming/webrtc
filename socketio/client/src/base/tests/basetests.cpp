@@ -11,6 +11,7 @@
 #include "basetests.h"
 #include "base/uuid.h"
 
+
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -54,6 +55,26 @@ public:
         std::cout << "Thread2!\n";
     }
 };
+
+
+
+template <class T>
+inline mySyncQueue<T>::mySyncQueue(int maxSize )
+    : Queue(maxSize)
+{
+}
+// virtual ~Thread2(void);
+template <class T>
+inline void  mySyncQueue<T>::dispatch(T& item)
+{
+    std::cout << " mySyncQueue pop item " << item <<   std::endl << std::flush;
+    //if (ondispatch)
+      //  ondispatch(item);
+
+}
+
+
+//template MyArray<double, 5>;template MyArray<string, 5>;
 
 int main(int argc, char** argv) {
 
@@ -212,6 +233,24 @@ int main(int argc, char** argv) {
                 });
 
 
+    describe("mySyncQueue", []()
+    {
+        
+        mySyncQueue<int> *test = new mySyncQueue<int>();
+        
+        test->start();
+
+        int *y = new int;
+        *y=10;
+        test->push(y);
+        
+        base::sleep(500);
+        
+        test->stop();
+        test->join();
+
+        
+    });
 
     test::runAll();
 

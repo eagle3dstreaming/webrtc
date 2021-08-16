@@ -17,6 +17,7 @@
 #include <cstdlib> // std::malloc(), std::free()
 #include <cstring> // std::memcpy()
 
+// TcpConnection class is for RFC 4571 for RTP transport. Please do not use it other than SFU/MCU.
 
 namespace base {
     namespace net {
@@ -33,6 +34,7 @@ namespace base {
         inline static void onRead(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf) {
             auto* connection = static_cast<TcpConnectionBase*> (handle->data);
 
+           // SInfo << "onRead "  << connection;
             if (connection)
             	connection->OnUvRead(nread, buf);
         }
@@ -51,14 +53,22 @@ namespace base {
         }
 
         inline static void onClose(uv_handle_t* handle) {
-
-            LInfo("onClose");
+            
+            
             TcpConnectionBase *obj = (TcpConnectionBase *) handle->data;
-
+            
+            SInfo << "onClose ";
+            
+           
             if (obj)
                 obj->on_close();
-            delete handle;
-            handle = nullptr;
+            
+             if(obj->listenerClose)
+             obj->listenerClose->OnTcpConnectionClosed(obj);
+                    
+            
+//            delete handle;
+//              handle = nullptr;
         }
 
         inline static void onShutdown(uv_shutdown_t* req, int /*status*/) {
@@ -78,11 +88,13 @@ namespace base {
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 
-        TcpConnectionBase::TcpConnectionBase(bool tls) : tls(tls) {
+        TcpConnectionBase::TcpConnectionBase(Listener *listener, bool tls) : tls(tls), listener(listener){
 
             this->uvHandle = new uv_tcp_t;
             this->uvHandle->data = (void*) this;
-
+           
+            SInfo << "TcpConnectionBase new handle " <<  this->uvHandle;
+             
             // NOTE: Don't allocate the buffer here. Instead wait for the first uv_alloc_cb().
         }
 
@@ -93,11 +105,22 @@ namespace base {
                 Close();
 
             delete[] this->buffer;
+            
+            SInfo << "~TcpConnectionBase delete handle " <<  this->uvHandle;
+            delete   this->uvHandle;
+            this->uvHandle = nullptr;        
+            
         }
+        
+        
+         void TcpConnectionBase::on_close() 
+         {
+             
+         }
 
         void TcpConnectionBase::Close() {
 
-            LTrace("Close ", this->uvHandle)
+            STrace << "Close handle " ;
             if (this->closed)
                 return;
 
@@ -105,7 +128,7 @@ namespace base {
 
             this->closed = true;
 
-            this->uvHandle->data = this;
+           // this->uvHandle->data = this;
 
             // Tell the UV handle that the TcpConnectionBase has been closed.
             /*this->uvHandle->data = nullptr;
@@ -152,12 +175,12 @@ namespace base {
             LDebug("</TcpConnectionBase>");
         }
 
-        void TcpConnectionBase::Setup(
+        void TcpConnectionBase::Setup( ListenerClose* listenerClose, uv_loop_t* _loop,
                 struct sockaddr_storage* localAddr, const std::string& localIp, uint16_t localPort) {
-
+            this->listenerClose = listenerClose;
 
             // Set the UV handle.
-            int err = uv_tcp_init(Application::uvGetLoop(), this->uvHandle);
+            int err = uv_tcp_init(_loop, this->uvHandle);
 
             if (err != 0) {
                 delete this->uvHandle;
@@ -548,6 +571,9 @@ namespace base {
                     on_tls_read((const char*) buf->base, nread);
                 else
                     on_read((const char*) buf->base, nread);
+                
+                if(listener)
+                listener->on_read(this, (const char*) buf->base, nread); //arvind
 
             }// Client disconneted.
             else if (nread == UV_EOF || nread == UV_ECONNRESET) {
@@ -586,14 +612,21 @@ namespace base {
                 Close();
             }
         }
+        
+        
+        void TcpConnectionBase::send(const char* data, size_t len) {
+
+           Write(data, len, nullptr);
+        }
 
         /*************************************************************************************************************/
-
+        // TcpConnection class is for RFC 4571 for RTP transport. Please do not use it other than SFU/MCU.
+        
         static constexpr size_t ReadBufferSize{ 65536 };
-	static uint8_t ReadBuffer[ReadBufferSize];
+	    static uint8_t ReadBuffer[ReadBufferSize];
 
         TcpConnection::TcpConnection(Listener* listener, bool tls)
-        : TcpConnectionBase(tls), listener(listener) {
+        : TcpConnectionBase(listener, tls){
 
         }
 

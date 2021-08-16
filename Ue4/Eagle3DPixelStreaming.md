@@ -116,6 +116,11 @@ gn gen out/x64/Release  --args="target_cpu=\"x64\" use_rtti=true is_debug=false 
 
 ninja -C out/x64/Release webrtc
 
+gn gen out/x64/Debug  --args="target_cpu=\"x64\" use_rtti=true is_debug=true symbol_level=2 rtc_build_tools=false rtc_build_examples=true rtc_include_tests=false enable_precompiled_headers=false use_cxx11=false use_custom_libcxx=false use_custom_libcxx_for_host=false rtc_build_ssl=false rtc_ssl_root=\"E:\UnrealEngine\Engine\Source\ThirdParty\OpenSSL\1.1.1\Include\Win64\VS2015\" is_clang=false is_component_build=false use_lld=false"
+
+ninja -C out/x64/Debug webrtc
+
+
 
 ## Features
 - Lite -ICE
