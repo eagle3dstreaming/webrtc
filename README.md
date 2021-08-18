@@ -168,3 +168,16 @@ ninja -C out/debugx64 signaler
 ninja -C out/debugx64 socketio
 ninja -C out/debugx64 testhtml
 
+
+
+
+## To comple with Visual studio 
+
+
+mkdir build 
+
+cd build 
+
+on windows
+
+cmake.exe ..  -G  "Visual Studio 16 2019"

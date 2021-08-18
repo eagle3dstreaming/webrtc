@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# EHsc for exception. W4 & w for warning levels
+
 import("//build/config/sanitizers/sanitizers.gni")
 import("//build_overrides/build.gni")
 import("//build/config/arm.gni")
@@ -33,7 +35,6 @@ config("socketio_config") {
     }
     else
     {
-	# EHsc for exception. W4 & w for warning levels
 
         if (is_clang) {
             cflags_cc = ["-w",  "/EHsc" , "-Wno-error" , "-Wno-inconsistent-missing-override",

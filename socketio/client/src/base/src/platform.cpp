@@ -15,8 +15,9 @@
 
 #include "uv.h"
 
-#include <stdlib.h>
-#include <string.h>
+//#include <stdlib.h>
+#include <sstream>
+#include <string>
 
 #ifdef base_WIN
 #include <windows.h>

@@ -15,7 +15,16 @@
 #include "net/PortManager.h"
 #include <inttypes.h>
 #include "net/IP.h"
+#if HTTPSSL
 #include "net/SslConnection.h"
+#endif 
+
+#ifdef _WIN32
+#define TEST_PIPENAME "\\\\?\\pipe\\uv-test"
+#else
+#define TEST_PIPENAME "/tmp/uv-test-sock"
+#endif
+
 
 namespace base
 {
@@ -96,21 +105,61 @@ namespace base
         }
 
 
+        static void listen_cb(uv_stream_t* handle, int status) {
+          int err;
+          ASSERT(status == 0);
+
+        child_worker* tmp = (child_worker*)handle->data;
+
+          
+
+          err = uv_pipe_init(handle->loop, &tmp->channelqueue, 1);
+        err = uv_accept((uv_stream_t*)handle, (uv_stream_t*)&tmp->channelqueue);
+          ASSERT(err == 0);
+
+          //send_recv_start();
+
+          tmp->channelqueue.data = tmp;
+
+          err = uv_read_start((uv_stream_t*)&tmp->channelqueue,  alloc_buffer_worker,  on_new_worker_connection);  // arvind
+          if (err != 0)
+            LError("workermain() failed: %s", uv_strerror(err));
+
+        }
+
+
         static void workermain(void* _worker) {
             child_worker *tmp = (child_worker*) _worker;
             tmp->loppworker = (uv_loop_t*) malloc(sizeof (uv_loop_t));
             Application app;
             tmp->loppworker = Application::uvGetLoop();
             
-            int e ;//= uv_loop_init(tmp->loppworker);
+            int err;  //= uv_loop_init(tmp->loppworker);
 
 
-            e = uv_pipe_init(tmp->loppworker, &tmp->queue, 1/* ipc */);
-            e = uv_pipe_open(&tmp->queue, tmp->fds[1]);
+            err = uv_pipe_init(tmp->loppworker, &tmp->queue, 0 /* ipc */);
+            if (err != 0)
+              LError("workermain() failed: %s", uv_strerror(err));
 
-            tmp->queue.data = tmp;
+           // err = uv_pipe_open(&tmp->queue, 0);
+            char pipePath[256];
+            sprintf(pipePath, "%s_%d", TEST_PIPENAME, tmp->id);
+            err = uv_pipe_bind(&tmp->queue, pipePath);
+            ASSERT(err == 0);
 
-            e = uv_read_start((uv_stream_t*) & tmp->queue, alloc_buffer_worker, on_new_worker_connection);  // arvind
+
+             tmp->queue.data = tmp;
+
+            err = uv_listen((uv_stream_t*)&tmp->queue, SOMAXCONN, listen_cb);
+            ASSERT(err == 0);
+
+             if (err != 0)
+              LError("workermain() failed: %s", uv_strerror(err));
+
+           
+
+          
+
             uv_run(tmp->loppworker, UV_RUN_DEFAULT);
             
             SInfo << "close workermain ";
@@ -118,6 +167,13 @@ namespace base
         }
 
         
+        static void connect_cb(uv_connect_t* req, int status) {
+  
+            SInfo << "Pipe Connected ";
+
+             ASSERT(status == 0);
+
+        }
        
         
         void  TcpServerBase::setup_workers() {
@@ -136,7 +192,7 @@ namespace base
 
             // launch same number of workers as number of CPUs
             uv_cpu_info_t *info;
-            int cpu_count = 40;
+            int cpu_count = 3;
             //uv_cpu_info(&info, &cpu_count);
             //uv_free_cpu_info(info, cpu_count);
 
@@ -145,25 +201,45 @@ namespace base
             workers = (child_worker*) calloc(cpu_count, sizeof (struct child_worker));
             while (cpu_count--) {
                 struct child_worker *worker = &workers[cpu_count];
-                
+                worker->id = cpu_count;
                 worker->obj = this;
                 
-                uv_pipe_init(Application::uvGetLoop(), &worker->pipe, 1);
+                int err;
+              //  err = uv_pipe_init(Application::uvGetLoop(), &worker->pipe, 1);
+              //  if (err != 0)
+               //   LError("setup_workers() failed: %s", uv_strerror(err));
 
-                //socketpair(AF_UNIX, SOCK_STREAM, 0, worker->fds);  // arvind fix it later
+                //socketpair(AF_UNIX, SOCK_STREAM, 0, worker->fds);  // arvind this works in linux only
+               // uv_socketpair(SOCK_STREAM, 0, worker->fds, UV_NONBLOCK_PIPE,  UV_NONBLOCK_PIPE);
 
-                //uv_socketpair( SOCK_STREAM  , 0,  worker->fds   );
+                //err = uv_pipe(worker->fds, UV_NONBLOCK_PIPE, UV_NONBLOCK_PIPE);
+                //if (err != 0)
+                //  LError("setup_workers() failed: %s", uv_strerror(err));
 
-                uv_pipe_open(&worker->pipe, worker->fds[0]);
+               // err =  uv_pipe_open(&worker->pipe,0);
+                //if (err != 0)
+                //  LError("setup_workers() failed: %s", uv_strerror(err));
 
-                int e = uv_thread_create(&worker->thread, workermain, (void *) worker);
-                if (0 != e)
-                {
-                    SError << "Error creating thread";
-                }
+                err = uv_thread_create(&worker->thread, workermain,      (void*)worker);
+                if (err != 0)
+                   LError("setup_workers() failed: %s", uv_strerror(err));
 
+                
+                 uv_sleep(1000);
 
-                // fprintf(stderr, "Started worker %d\n", worker->req.pid);
+                err = uv_pipe_init(Application::uvGetLoop(), &worker->pipe, 1);
+                 if (err != 0)
+                   LError("setup_workers() failed: %s", uv_strerror(err));
+
+                 //uv_connect_t connect_req;
+                 
+                 char pipePath[256];
+                 sprintf(pipePath, "%s_%d", TEST_PIPENAME, worker->id);
+
+                 uv_pipe_connect(&worker->connect_req, &worker->pipe, pipePath,
+                                 connect_cb);
+         
+
             }
         }
 
@@ -332,7 +408,7 @@ namespace base
                 } catch (const std::exception& error)
                 {
                     delete connection;
-
+                    SError << error.what();
                     return;
                 }
 
@@ -352,7 +428,7 @@ namespace base
                 } catch (const std::exception& error)
                 {
                     delete connection;
-
+                    SError << error.what();
                     return;
                 }
 
@@ -387,7 +463,7 @@ namespace base
             } catch (const std::exception& error)
             {
                 delete connection;
-
+                SError << error.what();
                 return;
             }
 
@@ -407,7 +483,7 @@ namespace base
             } catch (const std::exception& error)
             {
                 delete connection;
-
+                SError << error.what();
                 return;
             }
 
@@ -497,9 +573,11 @@ namespace base
 
 // condition
             // Allocate a new RTC::TcpConnection for the TcpServer to handle it.
+	#if HTTPSSL
             if(ssl)
              *connection = new SslConnection( true);
             else
+	 #endif
             *connection = new TcpConnectionBase(listener);
             
             //SInfo << "TcpServer::UserOnTcpConnectionAlloc new connection "  << *connection;

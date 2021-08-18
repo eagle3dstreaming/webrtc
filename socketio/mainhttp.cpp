@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
     //test::init();
   
     Application app;
-    testwebscoket socket("0.0.0.0", 8000, new StreamingResponderFactory(), false );
+    testwebscoket socket("0.0.0.0", 8000, new StreamingResponderFactory(), true );
     socket.start();
 
     app.waitForShutdown([&](void*) {
