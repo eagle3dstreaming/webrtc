@@ -144,6 +144,8 @@ namespace base
            // err = uv_pipe_open(&tmp->queue, 0);
             char pipePath[256];
             sprintf(pipePath, "%s_%d", TEST_PIPENAME, tmp->id);
+            unlink(pipePath);
+              
             err = uv_pipe_bind(&tmp->queue, pipePath);
             ASSERT(err == 0);
 
