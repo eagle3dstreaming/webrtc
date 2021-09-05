@@ -262,12 +262,10 @@ target_include_directories(main PUBLIC ./client/src/base/include ./client/src/ht
 target_link_libraries(main  PUBLIC uv_a )
 
 
-
-
-
-#target_link_libraries(main dl pthread ssl crypto )
-#target_link_libraries (testme LINK_PUBLIC ${SOURCES})
-
+add_library(httpStream STATIC ${SOURCES})
+target_compile_definitions(httpStream PRIVATE ${media_defines})
+target_include_directories(httpStream PUBLIC ./client/src/base/include ./client/src/http_parser ./client/src/json/include ./client/src/net/include ./client/src/http/include ./client/src/libuv/include ./client/src/libuv/src  ./client/src/signal/include )
+target_link_libraries(httpStream  PUBLIC uv_a )
 
 
 
