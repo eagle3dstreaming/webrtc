@@ -157,9 +157,6 @@ namespace base
 
              if (err != 0)
               LError("workermain() failed: %s", uv_strerror(err));
-
-           
-
           
 
             uv_run(tmp->loppworker, UV_RUN_DEFAULT);

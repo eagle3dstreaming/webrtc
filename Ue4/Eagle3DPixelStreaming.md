@@ -105,7 +105,7 @@ git apply third_partyPatch.diff
 
 cd ..
 
-cp Ue4srtppatch.diff to third_party\libsrtp
+cp Ue4/srtpPatch.diff to third_party/libsrtp
 
 cd third_party/libsrtp
 

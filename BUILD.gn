@@ -448,11 +448,11 @@ if (!build_with_chromium) {
       #"//third_party/winuwp_h264"
     ]
 
- if (is_win) {
-    deps += [
-      "win_h264_accel",
-    ]
-    }
+# if (is_win) {
+#    deps += [
+#      "win_h264_accel",
+#    ]
+#    }
 
     if (rtc_include_builtin_audio_codecs) {
       deps += [
