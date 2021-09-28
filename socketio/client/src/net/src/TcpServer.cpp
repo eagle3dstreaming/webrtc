@@ -79,7 +79,7 @@ namespace base
             uv_handle_type pending = uv_pipe_pending_type(pipe);
             assert(pending == UV_TCP);
             
-           
+            free(buf->base);
            // SInfo <<  "on_new_worker_connection  loppworker" << tmp->loppworker    <<  "  threadid "  <<  tmp->thread;
                     
            tmp->obj->worker_connection(tmp->loppworker, q);
@@ -105,6 +105,7 @@ namespace base
         }
 
 
+#ifdef _WIN32
         static void listen_cb(uv_stream_t* handle, int status) {
           int err;
           ASSERT(status == 0);
@@ -126,7 +127,7 @@ namespace base
             LError("workermain() failed: %s", uv_strerror(err));
 
         }
-
+#endif
 
         static void workermain(void* _worker) {
             child_worker *tmp = (child_worker*) _worker;
@@ -137,6 +138,7 @@ namespace base
             int err;  //= uv_loop_init(tmp->loppworker);
 
 
+   #ifdef _WIN32 
             err = uv_pipe_init(tmp->loppworker, &tmp->queue, 0 /* ipc */);
             if (err != 0)
               LError("workermain() failed: %s", uv_strerror(err));
@@ -150,22 +152,32 @@ namespace base
             ASSERT(err == 0);
 
 
-             tmp->queue.data = tmp;
+            tmp->queue.data = tmp;
 
             err = uv_listen((uv_stream_t*)&tmp->queue, SOMAXCONN, listen_cb);
             ASSERT(err == 0);
 
              if (err != 0)
               LError("workermain() failed: %s", uv_strerror(err));
-          
 
+#else
+  	    err = uv_pipe_init(tmp->loppworker, &tmp->queue, 1/* ipc */);
+            err = uv_pipe_open(&tmp->queue, tmp->fds[1]);
+
+            tmp->queue.data = tmp;
+
+            err = uv_read_start((uv_stream_t*) & tmp->queue, alloc_buffer_worker, on_new_worker_connection);  // arvind
+	    if (err != 0)
+              LError("workermain() failed: %s", uv_strerror(err));
+
+#endif
             uv_run(tmp->loppworker, UV_RUN_DEFAULT);
             
             SInfo << "close workermain ";
 
         }
 
-        
+   #ifdef _WIN32     
         static void connect_cb(uv_connect_t* req, int status) {
   
             SInfo << "Pipe Connected ";
@@ -173,7 +185,7 @@ namespace base
              ASSERT(status == 0);
 
         }
-       
+    #endif   
         
         void  TcpServerBase::setup_workers() {
             SInfo << __func__;
@@ -190,8 +202,8 @@ namespace base
             // ...
 
             // launch same number of workers as number of CPUs
-            //uv_cpu_info_t *info;
-            int cpu_count = 3;
+            uv_cpu_info_t *info;
+            int cpu_count = 40;
             //uv_cpu_info(&info, &cpu_count);
             //uv_free_cpu_info(info, cpu_count);
 
@@ -203,22 +215,7 @@ namespace base
                 worker->id = cpu_count;
                 worker->obj = this;
                 
-                int err;
-              //  err = uv_pipe_init(Application::uvGetLoop(), &worker->pipe, 1);
-              //  if (err != 0)
-               //   LError("setup_workers() failed: %s", uv_strerror(err));
-
-                //socketpair(AF_UNIX, SOCK_STREAM, 0, worker->fds);  // arvind this works in linux only
-               // uv_socketpair(SOCK_STREAM, 0, worker->fds, UV_NONBLOCK_PIPE,  UV_NONBLOCK_PIPE);
-
-                //err = uv_pipe(worker->fds, UV_NONBLOCK_PIPE, UV_NONBLOCK_PIPE);
-                //if (err != 0)
-                //  LError("setup_workers() failed: %s", uv_strerror(err));
-
-               // err =  uv_pipe_open(&worker->pipe,0);
-                //if (err != 0)
-                //  LError("setup_workers() failed: %s", uv_strerror(err));
-
+#ifdef _WIN32
                 err = uv_thread_create(&worker->thread, workermain,      (void*)worker);
                 if (err != 0)
                    LError("setup_workers() failed: %s", uv_strerror(err));
@@ -237,7 +234,20 @@ namespace base
 
                  uv_pipe_connect(&worker->connect_req, &worker->pipe, pipePath,
                                  connect_cb);
-         
+#else
+
+ 	      uv_pipe_init(Application::uvGetLoop(), &worker->pipe, 1);
+
+                socketpair(AF_UNIX, SOCK_STREAM, 0, worker->fds);
+               // uv_socketpair(SOCK_STREAM, 0, worker->fds, 0, 0);
+                
+                uv_pipe_open(&worker->pipe, worker->fds[0]);
+
+                int err = uv_thread_create(&worker->thread, workermain, (void *) worker);
+                if (err != 0)
+                 LError("setup_workers() failed: %s", uv_strerror(err));
+
+#endif         
 
             }
         }
@@ -287,6 +297,15 @@ namespace base
 
             if (!this->closed)
                 Close();
+            
+            for( int x =0; x < child_worker_count ; ++x )
+            {
+                 struct child_worker *worker = &workers[x];
+                 free(worker->loppworker);
+                 
+            }
+            
+                
         }
 
         void TcpServerBase::Close() {
