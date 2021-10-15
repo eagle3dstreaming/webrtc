@@ -119,9 +119,9 @@ namespace base {
             SslConnection::Close();
         }
 
-         void HttpsClient::tcpsend(const char* data, size_t len) {
+         void HttpsClient::tcpsend(const char* data, size_t len , onSendCallback cb) {
     
-             SslConnection::send(data, len);
+             SslConnection::tcpsend(data, len, cb); //arvind
          }
          
         void HttpsClient::send(const char* data, size_t len, bool binary) {

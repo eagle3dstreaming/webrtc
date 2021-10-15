@@ -30,7 +30,7 @@ namespace base {
                 std::string content_type;
                 bool error;
                 //uv_loop_t *myloop{nullptr};
-                HttpConnection *con{nullptr}; 
+                HttpBase *con{nullptr}; 
             };
             
             
@@ -55,7 +55,8 @@ namespace base {
 
                 
                 //#if 0
-                std::string filepath(".");
+               // std::string filepath(".");
+                std::string filepath("/workspace/mediaserver/src/rtsp/main");
                 filepath += closure->path;
                 
                 
@@ -174,7 +175,7 @@ namespace base {
               //  resbuf.base = (char *) res.c_str();
                // resbuf.len = res.size();
              
-                auto cb =  TcpConnectionBase::onSendCallback([closure ](bool sent)
+                auto cb =  onSendCallback([closure ](bool sent)
                 {
                     if (sent)
                     {
@@ -185,7 +186,7 @@ namespace base {
                 
                 );
                                 
-                closure->con->Write( res.c_str(), res.size(), cb );
+                closure->con->tcpsend( res.c_str(), res.size(), cb );
 
              //   client->write_req.data = closure;
 
@@ -218,7 +219,7 @@ namespace base {
             STrace << "On complete" << std::endl;
 
             
-            HttpConnection *con = (HttpConnection*) connection();
+           
  
             auto& request1 = connection()->_request;
 
@@ -249,7 +250,7 @@ namespace base {
             
             
             closure->path = file_to_open;
-            closure->con = con;
+            closure->con = connection();
             closure->request.data = closure;
             int status = uv_queue_work(Application::uvGetLoop(),
                     &closure->request,
