@@ -89,7 +89,7 @@ namespace base {
             framer.writeFrame(data, len, flags, writer);
 
             assert(socket);
-            _connection->tcpsend((const char*) writer.begin(), writer.position());
+            _connection->tcpsend((const char*) writer.begin(), writer.position(), nullptr);
             
             
         }
@@ -102,7 +102,7 @@ namespace base {
             LTrace("Client request: ", oss.str())
 
             assert(socket);
-            _connection->tcpsend((const char*) oss.str().c_str(), oss.str().length());
+            _connection->tcpsend((const char*) oss.str().c_str(), oss.str().length(),  nullptr);
         }
 
     
@@ -140,16 +140,18 @@ namespace base {
 //            send(tmp,5 , false);
             
           //  SInfo << "WebSocketConnection " <<    uv_thread_self();
-            std::pair< bool, std::string > tmp;
-            dummy_mutex.lock();
-            if(dummy_queue.size())
-            {
+            
+            while(dummy_queue.size())
+            {   std::pair< bool, std::string > tmp;
+                dummy_mutex.lock();
+            
                 tmp = dummy_queue.front();
                 dummy_queue.pop();
+                 dummy_mutex.unlock();
+                if(tmp.second.length())
+                send(&tmp.second[0],tmp.second.length() , tmp.first);
             }
-             dummy_mutex.unlock();
-            if(tmp.second.length())
-            send(&tmp.second[0],tmp.second.length() , tmp.first);
+            
             
            
            
@@ -544,7 +546,8 @@ namespace base {
             } else {
                 lenByte |= 127;
                 frame.putU8(lenByte);
-                frame.putU64(static_cast<uint16_t> (len));
+                //frame.putU64(static_cast<uint16_t> (len));// websocket lager number > 65536 writeFrame bug
+                frame.putU64(static_cast<uint64_t>(len));
             }
 
             if (_maskPayload) {

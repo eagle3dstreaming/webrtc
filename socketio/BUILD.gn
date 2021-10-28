@@ -488,18 +488,18 @@ config("socketio_private_config") {
     "client/src/net/include/net/netInterface.h",
     "client/src/net/include/net/UdpSocket.h",
     "client/src/net/include/net/IP.h",
-    #"client/src/net/include/net/SslConnection.h",
-    #"client/src/net/include/net/ssladapter.h",
+    "client/src/net/include/net/SslConnection.h",
+    "client/src/net/include/net/ssladapter.h",
     "client/src/net/include/net/TcpServer.h",
     "client/src/net/include/net/TcpConnection.h",
     "client/src/net/include/net/dns.h",
     "client/src/net/src/TcpServer.cpp",
     "client/src/net/src/PortManager.cpp",
-    #"client/src/net/src/SslConnection.cpp",
+    "client/src/net/src/SslConnection.cpp",
     "client/src/net/src/IP.cpp",
     "client/src/net/src/TcpConnection.cpp",
     "client/src/net/src/UdpSocket.cpp",
-    #"client/src/net/src/ssladapter.cpp",
+    "client/src/net/src/ssladapter.cpp",
 
     "client/src/http/include/http/HTTPResponder.h",
     "client/src/http/include/http/responder.h",
@@ -517,13 +517,13 @@ config("socketio_private_config") {
     "client/src/http/include/http/http.h",
     "client/src/http/include/http/response.h",
     "client/src/http/include/http/HttpConn.h",
-    #"client/src/http/include/http/HttpsConn.h",
+    "client/src/http/include/http/HttpsConn.h",
     "client/src/http/include/http/parser.h",
     "client/src/http/include/http/form.h",
 
 
     "client/src/http/src/HTTPResponder.cpp", 
-    #"client/src/http/src/HttpsConn.cpp",  
+    "client/src/http/src/HttpsConn.cpp",  
     "client/src/http/src/message.cpp",    
     "client/src/http/src/url.cpp",
     "client/src/http/src/HttpClient.cpp", 
@@ -536,7 +536,7 @@ config("socketio_private_config") {
    "client/src/http/src/HttpServer.cpp",  
    "client/src/http/src/form.cpp",    
    "client/src/http/src/request.cpp",
-    #"client/src/http/src/HttpsClient.cpp",  
+   "client/src/http/src/HttpsClient.cpp",  
    "client/src/http/src/httputil.cpp", 
    "client/src/http/src/response.cpp",
 
@@ -803,7 +803,8 @@ config("socketio_private_config") {
   
     #cflags = [ "-fexceptions" ]
     #cflags_cc = [ "-fexceptions"]
-
+    
+    defines = [  "HTTPSSL",  ]
 
     configs += [
        ":socketio_private_config",
