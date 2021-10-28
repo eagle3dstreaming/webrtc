@@ -578,7 +578,7 @@ config("socketio_private_config") {
     "client/src/rtsp/ffmpeg/bprint.h",
     "client/src/rtsp/ffmpeg/mem_internal.h",
     "client/src/rtsp/ffmpeg/mpegaudiodata.cpp",
-    "client/src/rtsp/ffmpeg/time.cpp",
+    "client/src/rtsp/ffmpeg/avtime.cpp",
     "client/src/rtsp/ffmpeg/aviobuf.cpp",
     "client/src/rtsp/ffmpeg/muxframe.cpp",
     "client/src/rtsp/ffmpeg/utils_avformat.cpp",
@@ -625,8 +625,7 @@ config("socketio_private_config") {
     "client/src/rtsp/ffmpeg/avdevthread.h",
     "client/src/rtsp/ffmpeg/cpu.h",
     "client/src/rtsp/ffmpeg/channel_layout.h",
-    "client/src/rtsp/ffmpeg/avpacket.arvind
-    "client/src/rtsp/ffmpeg/random_seed.cpp",
+     "client/src/rtsp/ffmpeg/random_seed.cpp",
     "client/src/rtsp/ffmpeg/aes.cpp",
     "client/src/rtsp/ffmpeg/intmath.h",
     "client/src/rtsp/ffmpeg/pthread.cpp",
@@ -657,7 +656,7 @@ config("socketio_private_config") {
     "client/src/rtsp/ffmpeg/avfft.h",
     "client/src/rtsp/ffmpeg/aac_ac3_parser.cpp",
     "client/src/rtsp/ffmpeg/atomic.cpp",
-    "client/src/rtsp/ffmpeg/buffer.cpp",
+    "client/src/rtsp/ffmpeg/avbuffer.cpp",
     "client/src/rtsp/ffmpeg/random_seed.h",
     "client/src/rtsp/ffmpeg/movenchint.cpp",
     "client/src/rtsp/ffmpeg/log.cpp",
@@ -738,11 +737,8 @@ config("socketio_private_config") {
     "client/src/rtsp/ffmpeg/spherical.h",
     "client/src/rtsp/ffmpeg/codec_desc.cpp",
     "client/src/rtsp/ffmpeg/mpegutils.cpp",
-    "client/src/rtsp/ffmpeg/compat
-    "client/src/rtsp/ffmpeg/compat/nvenc
     "client/src/rtsp/ffmpeg/compat/nvenc/nvEncodeAPI.h",
     "client/src/rtsp/ffmpeg/compat/w32dlfcn.h",
-    "client/src/rtsp/ffmpeg/compat/cuda
     "client/src/rtsp/ffmpeg/compat/cuda/dynlink_loader.h",
     "client/src/rtsp/ffmpeg/compat/cuda/dynlink_cuda.h",
     "client/src/rtsp/ffmpeg/compat/cuda/dynlink_nvcuvid.h",
@@ -766,7 +762,7 @@ config("socketio_private_config") {
     "client/src/rtsp/ffmpeg/rawutils.cpp",
     "client/src/rtsp/ffmpeg/dynarray.h",
     "client/src/rtsp/ffmpeg/format.cpp",
-    "client/src/rtsp/ffmpeg/parser.cpp",
+    "client/src/rtsp/ffmpeg/avparser.cpp",
     "client/src/rtsp/ffmpeg/avio_internal.h",
     "client/src/rtsp/ffmpeg/time_internal.h",
     "client/src/rtsp/ffmpeg/imgutils.h",
@@ -789,13 +785,7 @@ config("socketio_private_config") {
     "client/src/rtsp/ffmpeg/hwcontext_cuda_internal.h",
     "client/src/rtsp/ffmpeg/file_open.cpp",
     "client/src/rtsp/ffmpeg/eval.cpp",
-
-    "client/src/rtsp/ffmpeg/nvenc/nvEncodeAPI.h",
-    "client/src/rtsp/ffmpeg/w32dlfcn.h",
-    "client/src/rtsp/ffmpeg/cuda/dynlink_loader.h",
-    "client/src/rtsp/ffmpeg/cuda/dynlink_cuda.h",
-    "client/src/rtsp/ffmpeg/cuda/dynlink_nvcuvid.h",
-    "client/src/rtsp/ffmpeg/cuda/dynlink_cuviddec.h",
+ 
 
    
     ]
