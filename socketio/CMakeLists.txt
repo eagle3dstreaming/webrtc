@@ -254,17 +254,120 @@ list(APPEND SOURCES
 ./client/src/http/src/request.cpp
 #./client/src/http/src/HttpsClient.cpp  
 ./client/src/http/src/httputil.cpp 
-./client/src/http/src/response.cpp)
+./client/src/http/src/response.cpp
+
+./client/src/rtsp/ffmpeg/Settings.cpp
+./client/src/rtsp/ffmpeg/aac_ac3_parser.cpp
+./client/src/rtsp/ffmpeg/ac3_parser.cpp
+./client/src/rtsp/ffmpeg/ac3tab.cpp
+./client/src/rtsp/ffmpeg/aes.cpp
+./client/src/rtsp/ffmpeg/aes_ctr.cpp
+./client/src/rtsp/ffmpeg/allcodecs.cpp
+./client/src/rtsp/ffmpeg/allformats.cpp
+./client/src/rtsp/ffmpeg/atomic.cpp
+./client/src/rtsp/ffmpeg/audio_frame_queue.cpp
+./client/src/rtsp/ffmpeg/audiointerleave.cpp
+./client/src/rtsp/ffmpeg/avbuffer.cpp
+./client/src/rtsp/ffmpeg/avc.cpp
+./client/src/rtsp/ffmpeg/avfft.cpp
+./client/src/rtsp/ffmpeg/avio.cpp
+./client/src/rtsp/ffmpeg/aviobuf.cpp
+./client/src/rtsp/ffmpeg/avpacket.cpp
+./client/src/rtsp/ffmpeg/avparser.cpp
+./client/src/rtsp/ffmpeg/avstring.cpp
+./client/src/rtsp/ffmpeg/avtime.cpp
+./client/src/rtsp/ffmpeg/bitstream.cpp
+./client/src/rtsp/ffmpeg/bitstream_filters.cpp
+./client/src/rtsp/ffmpeg/bprint.cpp
+./client/src/rtsp/ffmpeg/bsf.cpp
+./client/src/rtsp/ffmpeg/channel_layout.cpp
+./client/src/rtsp/ffmpeg/codec_desc.cpp
+./client/src/rtsp/ffmpeg/color_utils.cpp
+./client/src/rtsp/ffmpeg/cpu.cpp
+./client/src/rtsp/ffmpeg/crc.cpp
+./client/src/rtsp/ffmpeg/cuvid.cpp
+./client/src/rtsp/ffmpeg/dct.cpp
+./client/src/rtsp/ffmpeg/dict.cpp
+./client/src/rtsp/ffmpeg/error.cpp
+./client/src/rtsp/ffmpeg/eval.cpp
+./client/src/rtsp/ffmpeg/faandct.cpp
+./client/src/rtsp/ffmpeg/fdctdsp.cpp
+./client/src/rtsp/ffmpeg/fifo.cpp
+./client/src/rtsp/ffmpeg/file_open.cpp
+./client/src/rtsp/ffmpeg/format.cpp
+./client/src/rtsp/ffmpeg/frame_thread_encoder.cpp
+./client/src/rtsp/ffmpeg/h264_mp4toannexb_bsf.cpp
+./client/src/rtsp/ffmpeg/hwcontext.cpp
+./client/src/rtsp/ffmpeg/id3v1.cpp
+./client/src/rtsp/ffmpeg/id3v2.cpp
+./client/src/rtsp/ffmpeg/imgutils.cpp
+./client/src/rtsp/ffmpeg/intmath.cpp
+./client/src/rtsp/ffmpeg/isom.cpp
+./client/src/rtsp/ffmpeg/libfdk-aacdec.cpp
+./client/src/rtsp/ffmpeg/libfdk-aacenc.cpp
+./client/src/rtsp/ffmpeg/live.cpp
+./client/src/rtsp/ffmpeg/livethread.cpp
+./client/src/rtsp/ffmpeg/log.cpp
+./client/src/rtsp/ffmpeg/mathematics.cpp
+./client/src/rtsp/ffmpeg/mem.cpp
+./client/src/rtsp/ffmpeg/metadata.cpp
+./client/src/rtsp/ffmpeg/mov_chan.cpp
+./client/src/rtsp/ffmpeg/movenc.cpp
+./client/src/rtsp/ffmpeg/movenccenc.cpp
+./client/src/rtsp/ffmpeg/movenchint.cpp
+./client/src/rtsp/ffmpeg/mpeg12data.cpp
+./client/src/rtsp/ffmpeg/mpeg4_unpack_bframes_bsf.cpp
+./client/src/rtsp/ffmpeg/mpeg4audio.cpp
+./client/src/rtsp/ffmpeg/mpegaudiodata.cpp
+./client/src/rtsp/ffmpeg/mpegpicture.cpp
+./client/src/rtsp/ffmpeg/mpegutils.cpp
+./client/src/rtsp/ffmpeg/mpegvideodsp.cpp
+./client/src/rtsp/ffmpeg/mpegvideoencdsp.cpp
+./client/src/rtsp/ffmpeg/mux.cpp
+./client/src/rtsp/ffmpeg/muxframe.cpp
+./client/src/rtsp/ffmpeg/network.cpp
+./client/src/rtsp/ffmpeg/opt.cpp
+./client/src/rtsp/ffmpeg/options.cpp
+./client/src/rtsp/ffmpeg/options_avformat.cpp
+./client/src/rtsp/ffmpeg/os_support.cpp
+./client/src/rtsp/ffmpeg/parseutils.cpp
+./client/src/rtsp/ffmpeg/pixdesc.cpp
+./client/src/rtsp/ffmpeg/profiles.cpp
+./client/src/rtsp/ffmpeg/protocols.cpp
+./client/src/rtsp/ffmpeg/pthread.cpp
+./client/src/rtsp/ffmpeg/pthread_frame.cpp
+./client/src/rtsp/ffmpeg/pthread_slice.cpp
+./client/src/rtsp/ffmpeg/random_seed.cpp
+./client/src/rtsp/ffmpeg/ratecontrol.cpp
+./client/src/rtsp/ffmpeg/rational.cpp
+./client/src/rtsp/ffmpeg/raw.cpp
+./client/src/rtsp/ffmpeg/rawutils.cpp
+./client/src/rtsp/ffmpeg/rdft.cpp
+./client/src/rtsp/ffmpeg/reverse.cpp
+./client/src/rtsp/ffmpeg/riff.cpp
+./client/src/rtsp/ffmpeg/riffenc.cpp
+./client/src/rtsp/ffmpeg/rl.cpp
+./client/src/rtsp/ffmpeg/samplefmt.cpp
+./client/src/rtsp/ffmpeg/sha.cpp
+./client/src/rtsp/ffmpeg/stereo3d.cpp
+./client/src/rtsp/ffmpeg/timecode.cpp
+./client/src/rtsp/ffmpeg/utils.cpp
+./client/src/rtsp/ffmpeg/utils_avformat.cpp
+./client/src/rtsp/ffmpeg/utils_avutil.cpp
+./client/src/rtsp/ffmpeg/vpcc.cpp
+
+
+)
 
 add_executable(main  mainhttp.cpp  ${SOURCES})
 target_compile_definitions(main PRIVATE ${media_defines})
-target_include_directories(main PUBLIC ./client/src/base/include ./client/src/http_parser ./client/src/json/include ./client/src/net/include ./client/src/http/include ./client/src/libuv/include ./client/src/libuv/src  ./client/src/signal/include )
+target_include_directories(main PUBLIC ./client/src/base/include ./client/src/http_parser ./client/src/json/include ./client/src/net/include ./client/src/http/include ./client/src/libuv/include ./client/src/libuv/src  ./client/src/signal/include ./client/src/rtsp/ffmpeg )
 target_link_libraries(main  PUBLIC uv_a )
 
 
 add_library(httpStream STATIC ${SOURCES})
 target_compile_definitions(httpStream PRIVATE ${media_defines})
-target_include_directories(httpStream PUBLIC ./client/src/base/include ./client/src/http_parser ./client/src/json/include ./client/src/net/include ./client/src/http/include ./client/src/libuv/include ./client/src/libuv/src  ./client/src/signal/include )
+target_include_directories(httpStream PUBLIC ./client/src/base/include ./client/src/http_parser ./client/src/json/include ./client/src/net/include ./client/src/http/include ./client/src/libuv/include ./client/src/libuv/src  ./client/src/signal/include ./client/src/rtsp/ffmpeg )
 target_link_libraries(httpStream  PUBLIC uv_a )
 
 
