@@ -54,7 +54,7 @@ namespace base {
             SSL_CTX *ctx;
 
 
-            char KeyFile[] = "/var/tmp/key/private_key.pem";
+            char KeyFile[] = "./key/key.pem";
 
             SSL_library_init();
 
@@ -82,7 +82,7 @@ namespace base {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             #if FROMFILE
 
-            char CertFile[] = "/var/tmp/key/certificate.crt";
+            char CertFile[] = "./key/cert.pem";
            
             if (SSL_CTX_load_verify_locations(ctx, CertFile, nullptr) != 1)
                     ERR_print_errors_fp(stderr);

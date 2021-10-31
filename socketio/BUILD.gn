@@ -428,8 +428,8 @@ config("socketio_private_config") {
      "client/src/libuv/src",
      "client/src/libuv/src/unix",
      "client/src/signal/include",
-     "//third_party/boringssl/src/include",
-
+     #"//third_party/boringssl/src/include",
+     "//third_party/1.1.1/Include/Win64/VS2015/",
     ]
 
 
