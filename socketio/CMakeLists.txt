@@ -256,7 +256,6 @@ list(APPEND SOURCES
 ./client/src/http/src/httputil.cpp 
 ./client/src/http/src/response.cpp
 
-./client/src/rtsp/ffmpeg/Settings.cpp
 ./client/src/rtsp/ffmpeg/aac_ac3_parser.cpp
 ./client/src/rtsp/ffmpeg/ac3_parser.cpp
 ./client/src/rtsp/ffmpeg/ac3tab.cpp
