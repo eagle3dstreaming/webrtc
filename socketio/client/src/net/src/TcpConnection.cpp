@@ -97,6 +97,14 @@ namespace base {
              
             // NOTE: Don't allocate the buffer here. Instead wait for the first uv_alloc_cb().
         }
+        
+       int TcpConnectionBase::write_queue_size()
+       {
+           if( uvHandle != nullptr) 
+           return this->uvHandle->write_queue_size;
+           
+           return 0;
+       }
 
         TcpConnectionBase::~TcpConnectionBase() {
 
