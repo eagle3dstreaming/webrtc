@@ -429,7 +429,13 @@ config("socketio_private_config") {
      "client/src/libuv/src/unix",
      "client/src/signal/include",
      #"//third_party/boringssl/src/include",
-     "//third_party/1.1.1/Include/Win64/VS2015/",
+     if (is_linux) {
+       "//workspace/webrtc_android/src/third_party/1.1.1c/include/Linux/x86_64-unknown-linux-gnu/",
+      }
+      else
+      {
+        //third_party/1.1.1/Include/Win64/VS2015/",
+      }
     ]
 
 
