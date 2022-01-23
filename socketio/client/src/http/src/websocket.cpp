@@ -113,7 +113,7 @@ namespace base {
             _connection->fnConnect(_connection);
             
             if(listener)
-            listener->on_connect( this);
+            listener->on_wsconnect( this);
             // Call net::SocketEmitter::onSocketConnect to notify handlers that data may flow
             //net::SocketEmitter::onSocketConnect(*socket.get());
             
@@ -130,7 +130,7 @@ namespace base {
             store.buff =  std::string(data, len );
             store.frametype = frametype;//  1 ftype, 2 moov , 3 first moof & mdat( idr or I frame),   4 P or B frames cane be dropped
             
-            if (frametype == first_frame || first_frame >=3 )
+            if (frametype <= first_frame || first_frame >=3 )
             {
 		if(first_frame  < 6)
                 ++first_frame;
@@ -174,8 +174,9 @@ namespace base {
                 tmp = dummy_queue.front();
                 dummy_queue.pop();
                 dummy_mutex.unlock();
+                
                 //1 ftype, 2 moov, 3 first moof(idr frame),   4 P or B frames cane be dropped
-               if(  true  || (!dropping &&  qsize < 45   )  ||  (dropping &&  qsize < 25 && tmp.frametype == 1 )   )     /// 25  1 2 3 4 4 4 4 4 ( recent files)
+              // if(  true  ||  (!dropping &&  qsize < 45   )  ||  (dropping &&  qsize < 25 && tmp.frametype == 1 )   )     /// 25  1 2 3 4 4 4 4 4 ( recent files)
                {
                    if (tmp.buff.length())
                    {  
@@ -183,14 +184,16 @@ namespace base {
                        send(&tmp.buff[0], tmp.buff.length(), tmp.binary, cb);
                    }
                     
-                    dropping = false;
+                    //dropping = false;
                }
-               else
-               {
-                   dropping = true;
-                   std::cout << "dropping frame, storage queueze " <<  dummy_queue.size() << " pending Queue Size "  <<   qsize << std::endl;
-                   
-               }
+                
+                
+//               else
+//               {
+//                   dropping = true;
+//                   SInfo << "dropping frame, storage queueze " <<  dummy_queue.size() << " pending Queue Size "  <<   qsize;
+//                   
+//               }
             }
             
             
@@ -307,7 +310,7 @@ namespace base {
                          SInfo << "Close "  << this;
                          
                          if(listener)
-                        listener->on_close(listener);
+                        listener->on_wsclose(this);
 
                          if(_connection)
                         _connection->Close();
@@ -368,7 +371,7 @@ namespace base {
                         assert(payload);
                         assert(payloadLength);
                         if(listener)
-                        listener->on_read( this,(const char*) payload, payloadLength );
+                        listener->on_wsread( this,(const char*) payload, payloadLength );
                         
                        // net::SocketEmitter::onSocketRecv(*socket.get(),
                         //  mutableBuffer(payload, (size_t)payloadLength),
@@ -408,7 +411,7 @@ namespace base {
             framer._headerState = 0;
             framer._frameFlags = 0;
 
-            this->listener->on_close( this);
+            this->listener->on_wsclose( this);
             // Emit closed event
             //net::SocketEmitter::onSocketClose(*socket.get());
         }
