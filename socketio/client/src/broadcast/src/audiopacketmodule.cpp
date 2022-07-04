@@ -393,6 +393,9 @@ namespace base {
         int32_t AudioPacketModule::StopRecording() {
             LInfo(__FUNCTION__);
             CHECKinitialized_();
+          if (_recordingBuffer)
+            delete[] _recordingBuffer;
+            _recordingBuffer = NULL;
             _recording = false;
             return 0;
         }

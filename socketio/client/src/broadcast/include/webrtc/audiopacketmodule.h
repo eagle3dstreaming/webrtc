@@ -262,7 +262,7 @@ namespace base {
 
             size_t _recordingBufferSizeIn10MS;
             size_t _recordingFramesIn10MS;
-            int8_t* _recordingBuffer; // In bytes.
+            int8_t* _recordingBuffer{nullptr}; // In bytes.
 
   #if DIAGNOSTICK
             webrtc::FileWrapper _inputFile;

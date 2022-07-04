@@ -362,6 +362,93 @@ config("socketio_private_config") {
 
 
 
+
+  executable("decodeH264") 
+  {
+    sources = [
+      "client/src/ffmpeg/h24Decoder/H264_Decoder.cpp",
+      "client/src/ffmpeg/h24Decoder/H264_Decoder.h",
+      "client/src/ffmpeg/h24Decoder/main.cpp",
+    ]
+    deps = [
+     #"//:webrtc_common",
+    ]
+
+    include_dirs = [
+      "//third_party/ffmpeg",
+      "//third_party/ffmpeg/chromium/config/Chrome/win/x64",
+    ]
+
+
+    if (is_linux) {
+      cflags = [ "-fexceptions" ]
+    }
+
+      if (is_win) {
+    libs = [
+       "userenv.lib",
+      "iphlpapi.lib",
+      #"c:/workspace/webrtc/src/out/m89/obj/webrtc.lib",
+      #"c:/workspace/webrtc/src/out/m89/ffmpeg.dll.lib",
+      "c:/workspace/webrtc/src/out/m89/obj/third_party/ffmpeg/ffmpeg_nasm.lib",
+      "c:/workspace/webrtc/src/out/m89/obj/third_party/ffmpeg/ffmpeg_internal.lib",
+      "E:\UnrealEngine\Engine\Source\ThirdParty\ffmpeg4.2\lib\fdk-aac.lib",
+      #"D:\fb\local64\bin-video\avcodec.lib",
+      #"D:\fb\local64\bin-video\avformat.lib",
+      #"D:\fb\local64\bin-video\avutil.lib",
+      "D:\fb\local64\lib\libx264.lib",
+      "dxgi.lib",
+      "d3d11.lib",   
+
+
+    ]
+    }
+  }
+
+ 
+  executable("encodeH264") 
+  {
+    sources = [
+      "client/src/ffmpeg/h264Encoder/H264_Encoder.cpp",
+      "client/src/ffmpeg/h264Encoder/H264_Encoder.h",
+      "client/src/ffmpeg/h264Encoder/fftests.cpp",
+    ]
+    deps = [
+     #"//:webrtc_common",
+    ]
+
+    include_dirs = [
+      "//third_party/ffmpeg",
+      "//third_party/ffmpeg/chromium/config/Chrome/win/x64",
+    ]
+
+
+    if (is_linux) {
+      cflags = [ "-fexceptions" ]
+    }
+
+      if (is_win) {
+    libs = [
+       "userenv.lib",
+      "iphlpapi.lib",
+      #"c:/workspace/webrtc/src/out/m89/obj/webrtc.lib",
+      #"c:/workspace/webrtc/src/out/m89/ffmpeg.dll.lib",
+      "c:/workspace/webrtc/src/out/m89/obj/third_party/ffmpeg/ffmpeg_nasm.lib",
+      "c:/workspace/webrtc/src/out/m89/obj/third_party/ffmpeg/ffmpeg_internal.lib",
+      "E:\UnrealEngine\Engine\Source\ThirdParty\ffmpeg4.2\lib\fdk-aac.lib",
+      #"D:\fb\local64\bin-video\avcodec.lib",
+      #"D:\fb\local64\bin-video\avformat.lib",
+      #"D:\fb\local64\bin-video\avutil.lib",
+      "D:\fb\local64\lib\libx264.lib",
+      "dxgi.lib",
+      "d3d11.lib",   
+
+
+    ]
+    }
+  }
+
+
   executable("testme") {
     sources = [
       # sources
